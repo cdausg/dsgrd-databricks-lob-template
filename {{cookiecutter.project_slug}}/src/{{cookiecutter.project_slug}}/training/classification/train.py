@@ -119,11 +119,19 @@ with mlflow.start_run() as run:
     # Log directly with sklearn so the signature matches the numeric-only features used at training.
     # fe.log_model bakes in the full Feature Store schema (including feature_updated_timestamp)
     # which causes schema mismatch errors at inference time.
+    # Pin sklearn and numpy versions to match the training environment so the serving
+    # container uses compatible versions (avoids numpy.core.numeric.ComplexWarning import error).
+    import sklearn
+    import numpy
     signature = infer_signature(X_train, model.predict(X_train))
     mlflow.sklearn.log_model(
         sk_model=model,
         artifact_path="model",
         signature=signature,
+        pip_requirements=[
+            f"scikit-learn=={sklearn.__version__}",
+            f"numpy=={numpy.__version__}",
+        ],
         registered_model_name=f"{catalog}.{schema}.{model_name}"
     )
 
