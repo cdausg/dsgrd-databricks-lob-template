@@ -18,6 +18,9 @@ def make_predict_udf(catalog, schema, model_name):
 
     @pandas_udf(DoubleType())
     def predict(*cols):
+        import mlflow
+        import mlflow.sklearn
+        mlflow.set_tracking_uri("databricks")
         model = mlflow.sklearn.load_model(model_uri)
         X = pd.concat(cols, axis=1)
         X.columns = [str(i) for i in range(len(cols))]
