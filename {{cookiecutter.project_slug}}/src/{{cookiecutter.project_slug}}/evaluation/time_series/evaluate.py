@@ -23,10 +23,11 @@
 
 import mlflow
 from mlflow import MlflowClient
-from databricks.feature_engineering import FeatureEngineeringClient
+from databricks.feature_engineering import FeatureEngineeringClient, FeatureLookup
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import pandas as pd
 import numpy as np
+import pyspark.sql.functions as F
 
 # COMMAND ----------
 
@@ -59,23 +60,34 @@ client = MlflowClient()
 fe = FeatureEngineeringClient()
 
 # Load time series data for evaluation
-label_df = spark.table(f"{catalog}.{schema}.labels").select("id", "ds", "y")
+# Labels table has "id" and "target" columns; rename "target" to "y" for Prophet
+label_df = spark.table(f"{catalog}.{schema}.labels").select(
+    "id", F.col("target").alias("y")
+)
 
 feature_table_name = f"{catalog}.{schema}.{{cookiecutter.project_slug}}_features"
 eval_set = fe.create_training_set(
     df=label_df,
     feature_lookups=[
-        {
-            "table_name": feature_table_name,
-            "lookup_key": "id",
-            "timestamp_lookup_key": None
-        }
+        FeatureLookup(
+            table_name=feature_table_name,
+            lookup_key="id"
+        )
     ],
     label="y",
     exclude_columns=["id"]
 )
 
 df = eval_set.load_df().toPandas()
+
+# Build ds column the same way as training
+if "feature_updated_timestamp" in df.columns:
+    df = df.rename(columns={"feature_updated_timestamp": "ds"})
+    df["ds"] = pd.to_datetime(df["ds"])
+else:
+    df["ds"] = pd.date_range(end=pd.Timestamp.today(), periods=len(df), freq="D")
+
+df = df[["ds", "y"]].dropna().sort_values("ds").reset_index(drop=True)
 test_df = df[-horizon:]
 future = pd.DataFrame({"ds": test_df["ds"]})
 

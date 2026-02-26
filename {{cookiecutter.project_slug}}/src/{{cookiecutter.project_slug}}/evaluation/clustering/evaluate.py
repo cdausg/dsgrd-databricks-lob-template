@@ -25,7 +25,7 @@
 
 import mlflow
 from mlflow import MlflowClient
-from databricks.feature_engineering import FeatureEngineeringClient
+from databricks.feature_engineering import FeatureEngineeringClient, FeatureLookup
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
@@ -58,25 +58,26 @@ mlflow.set_registry_uri("databricks-uc")
 client = MlflowClient()
 fe = FeatureEngineeringClient()
 
-entity_df = spark.table(f"{catalog}.{schema}.entities").select("id")
-
 feature_table_name = f"{catalog}.{schema}.{{cookiecutter.project_slug}}_features"
+
+# Read entity IDs from feature table (no separate entities table)
+entity_df = spark.table(feature_table_name).select("id")
+
 eval_set = fe.create_training_set(
     df=entity_df,
     feature_lookups=[
-        {
-            "table_name": feature_table_name,
-            "lookup_key": "id",
-            "timestamp_lookup_key": None
-        }
+        FeatureLookup(
+            table_name=feature_table_name,
+            lookup_key="id"
+        )
     ],
     label=None,
     exclude_columns=["id"]
 )
 
 df = eval_set.load_df().toPandas()
-feature_cols = [c for c in df.columns if c not in
-               ["id", "event_timestamp", "processed_timestamp"]]
+feature_cols = [c for c in df.select_dtypes(include=["number"]).columns
+               if c not in ["id"]]
 X = df[feature_cols].fillna(0)
 
 scaler = StandardScaler()

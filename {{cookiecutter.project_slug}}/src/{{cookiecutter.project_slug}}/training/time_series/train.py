@@ -27,6 +27,7 @@ from prophet import Prophet
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import pandas as pd
 import numpy as np
+import pyspark.sql.functions as F
 
 # COMMAND ----------
 
@@ -68,8 +69,10 @@ mlflow.set_experiment(experiment_path)
 feature_table_name = f"{catalog}.{schema}.{{cookiecutter.project_slug}}_features"
 
 # Load feature table
-# For time series, the lookup key is typically a time-based entity (e.g. product_id, store_id)
-label_df = spark.table(f"{catalog}.{schema}.labels").select("id", "ds", "y")
+# Labels table has "id" and "target" columns; rename "target" to "y" for Prophet
+label_df = spark.table(f"{catalog}.{schema}.labels").select(
+    "id", F.col("target").alias("y")
+)
 
 training_set = fe.create_training_set(
     df=label_df,
@@ -105,7 +108,14 @@ class ProphetWrapper(mlflow.pyfunc.PythonModel):
 
 # COMMAND ----------
 
-df = df[["ds", "y"]].dropna()
+# Use feature_updated_timestamp as ds (date series); fall back to row index if not present
+if "feature_updated_timestamp" in df.columns:
+    df = df.rename(columns={"feature_updated_timestamp": "ds"})
+    df["ds"] = pd.to_datetime(df["ds"])
+else:
+    df["ds"] = pd.date_range(end=pd.Timestamp.today(), periods=len(df), freq="D")
+
+df = df[["ds", "y"]].dropna().sort_values("ds").reset_index(drop=True)
 train_df = df[:-horizon]
 test_df = df[-horizon:]
 

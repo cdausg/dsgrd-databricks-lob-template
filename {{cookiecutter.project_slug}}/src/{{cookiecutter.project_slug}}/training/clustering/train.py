@@ -22,6 +22,7 @@
 
 import mlflow
 import mlflow.sklearn
+from mlflow.models.signature import infer_signature
 from databricks.feature_engineering import FeatureEngineeringClient, FeatureLookup
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
@@ -142,11 +143,15 @@ with mlflow.start_run() as run:
     })
     mlflow.log_metrics(metrics)
 
+    # Unity Catalog requires both input and output signatures
+    signature = infer_signature(X_scaled, labels.astype(float))
+
     fe.log_model(
         model=model,
         artifact_path="model",
         flavor=mlflow.sklearn,
         training_set=training_set,
+        signature=signature,
         registered_model_name=f"{catalog}.{schema}.{model_name}"
     )
 
