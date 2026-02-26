@@ -108,14 +108,11 @@ class ProphetWrapper(mlflow.pyfunc.PythonModel):
 
 # COMMAND ----------
 
-# Use feature_updated_timestamp as ds (date series); fall back to row index if not present
-if "feature_updated_timestamp" in df.columns:
-    df = df.rename(columns={"feature_updated_timestamp": "ds"})
-    df["ds"] = pd.to_datetime(df["ds"])
-else:
-    df["ds"] = pd.date_range(end=pd.Timestamp.today(), periods=len(df), freq="D")
-
-df = df[["ds", "y"]].dropna().sort_values("ds").reset_index(drop=True)
+# Assign a synthetic daily date series - Prophet requires unique ds values
+# feature_updated_timestamp is not a time series index, so we generate one
+df = df[["y"]].dropna().reset_index(drop=True)
+df["ds"] = pd.date_range(end=pd.Timestamp.today(), periods=len(df), freq="D")
+df = df[["ds", "y"]]
 train_df = df[:-horizon]
 test_df = df[-horizon:]
 

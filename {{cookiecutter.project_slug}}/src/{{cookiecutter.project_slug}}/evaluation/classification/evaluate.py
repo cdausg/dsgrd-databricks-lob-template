@@ -24,8 +24,8 @@
 
 import mlflow
 from mlflow import MlflowClient
-from databricks.feature_engineering import FeatureEngineeringClient
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from databricks.feature_engineering import FeatureEngineeringClient, FeatureLookup
+from sklearn.metrics import accuracy_score, f1_score
 import pandas as pd
 
 # COMMAND ----------
@@ -63,18 +63,17 @@ feature_table_name = f"{catalog}.{schema}.{{cookiecutter.project_slug}}_features
 eval_set = fe.create_training_set(
     df=label_df,
     feature_lookups=[
-        {
-            "table_name": feature_table_name,
-            "lookup_key": "id",
-            "timestamp_lookup_key": None
-        }
+        FeatureLookup(
+            table_name=feature_table_name,
+            lookup_key="id"
+        )
     ],
     label="target",
     exclude_columns=["id"]
 )
 
 df = eval_set.load_df().toPandas()
-X = df.drop(columns=["target"])
+X = df.drop(columns=["target"]).select_dtypes(include=["number"])
 y = df["target"]
 
 # COMMAND ----------
@@ -85,11 +84,16 @@ y = df["target"]
 # COMMAND ----------
 
 def evaluate_model(model, X, y):
-    """Evaluate classification model and return metrics."""
+    """Evaluate classification model and return metrics.
+    Model is loaded as pyfunc (fe.log_model registers as pyfunc flavor).
+    """
+    X_df = pd.DataFrame(X) if not isinstance(X, pd.DataFrame) else X
+    preds = model.predict(X_df)
+    if isinstance(preds, pd.DataFrame):
+        preds = preds.iloc[:, 0].values
     return {
-        "accuracy": accuracy_score(y, model.predict(X)),
-        "f1_score": f1_score(y, model.predict(X), average="weighted"),
-        "roc_auc": roc_auc_score(y, model.predict_proba(X)[:, 1])
+        "accuracy": accuracy_score(y, preds),
+        "f1_score": f1_score(y, preds, average="weighted"),
     }
 
 # COMMAND ----------
@@ -100,7 +104,7 @@ if not versions:
     raise ValueError(f"No model versions found for {model_uri}")
 
 challenger_version = sorted(versions, key=lambda x: int(x.version), reverse=True)[0]
-challenger_model = mlflow.sklearn.load_model(
+challenger_model = mlflow.pyfunc.load_model(
     f"models:/{model_uri}/{challenger_version.version}"
 )
 
@@ -117,7 +121,7 @@ print(f"Challenger metrics: {challenger_metrics}")
 
 try:
     client.get_model_version_by_alias(model_uri, "champion")
-    champion_model = mlflow.sklearn.load_model(f"models:/{model_uri}@champion")
+    champion_model = mlflow.pyfunc.load_model(f"models:/{model_uri}@champion")
     champion_metrics = evaluate_model(champion_model, X, y)
     print(f"Champion metrics: {champion_metrics}")
 

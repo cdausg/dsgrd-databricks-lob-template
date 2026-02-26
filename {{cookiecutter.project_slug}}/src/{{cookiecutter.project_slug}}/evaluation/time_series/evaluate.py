@@ -80,14 +80,10 @@ eval_set = fe.create_training_set(
 
 df = eval_set.load_df().toPandas()
 
-# Build ds column the same way as training
-if "feature_updated_timestamp" in df.columns:
-    df = df.rename(columns={"feature_updated_timestamp": "ds"})
-    df["ds"] = pd.to_datetime(df["ds"])
-else:
-    df["ds"] = pd.date_range(end=pd.Timestamp.today(), periods=len(df), freq="D")
-
-df = df[["ds", "y"]].dropna().sort_values("ds").reset_index(drop=True)
+# Assign a synthetic daily date series matching how training generated ds
+df = df[["y"]].dropna().reset_index(drop=True)
+df["ds"] = pd.date_range(end=pd.Timestamp.today(), periods=len(df), freq="D")
+df = df[["ds", "y"]]
 test_df = df[-horizon:]
 future = pd.DataFrame({"ds": test_df["ds"]})
 

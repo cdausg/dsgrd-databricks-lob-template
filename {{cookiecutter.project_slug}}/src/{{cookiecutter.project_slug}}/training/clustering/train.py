@@ -144,7 +144,10 @@ with mlflow.start_run() as run:
     mlflow.log_metrics(metrics)
 
     # Unity Catalog requires both input and output signatures
-    signature = infer_signature(X_scaled, labels.astype(float))
+    # Use pandas DataFrame for inputs so signature schema is correctly inferred
+    X_sample = pd.DataFrame(X_scaled, columns=[f"f{i}" for i in range(X_scaled.shape[1])])
+    output_sample = pd.DataFrame({"cluster": labels.astype(float)})
+    signature = infer_signature(X_sample, output_sample)
 
     fe.log_model(
         model=model,
