@@ -11,17 +11,17 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import DoubleType
 from pyspark.sql.functions import pandas_udf
 
-# Load champion model as a broadcast pandas UDF (avoids Flask dependency of pyfunc.spark_udf)
+# Load champion model inside the UDF so each executor loads it independently.
+# Broadcast variables are unreliable in DLT pipelines due to lifecycle management.
 def make_predict_udf(catalog, schema, model_name):
     model_uri = f"models:/{catalog}.{schema}.{model_name}@champion"
-    model = mlflow.sklearn.load_model(model_uri)
-    bc_model = spark.sparkContext.broadcast(model)
 
     @pandas_udf(DoubleType())
     def predict(*cols):
+        model = mlflow.sklearn.load_model(model_uri)
         X = pd.concat(cols, axis=1)
         X.columns = [str(i) for i in range(len(cols))]
-        return pd.Series(bc_model.value.predict(X).astype(float))
+        return pd.Series(model.predict(X).astype(float))
 
     return predict
 
