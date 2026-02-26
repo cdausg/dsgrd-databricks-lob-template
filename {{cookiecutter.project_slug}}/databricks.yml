@@ -6,19 +6,19 @@ include:
 
 variables:
   catalog:
-    description: Target catalog
+    description: Unity Catalog catalog name
     default: {{cookiecutter.catalog_name}}
   schema:
-    description: Target schema
+    description: Unity Catalog schema name
     default: {{cookiecutter.schema_name}}
   spark_version:
     description: Databricks runtime version
     default: {{cookiecutter.spark_version}}
   node_type_id:
-    description: Azure VM node type
+    description: VM node type (Azure - Standard_DS3_v2, AWS - i3.xlarge)
     default: {{cookiecutter.node_type_id}}
   cluster_policy_id:
-    description: Cluster policy ID
+    description: Cluster policy ID - get this from the hub platform team
     default: {{cookiecutter.cluster_policy_id}}
   model_name:
     description: MLflow registered model name
@@ -26,6 +26,10 @@ variables:
   mlflow_experiment_path:
     description: MLflow experiment path
     default: {{cookiecutter.mlflow_experiment_path}}
+
+permissions:
+  - group_name: {{cookiecutter.engineer_group}}
+    level: CAN_MANAGE
 
 targets:
   dev:
@@ -35,16 +39,32 @@ targets:
       host: {{cookiecutter.workspace_url}}
     variables:
       catalog: {{cookiecutter.catalog_name}}_dev
+      schema: {{cookiecutter.schema_name}}
 
   staging:
+    mode: production
     workspace:
       host: {{cookiecutter.workspace_url}}
+      # Replace with your staging workspace URL
+      # Get this from the hub platform team
+    run_as:
+      service_principal_name: {{cookiecutter.project_slug}}-staging-sp
+      # Replace with the actual service principal name
+      # Get this from the hub platform team
     variables:
       catalog: {{cookiecutter.catalog_name}}_staging
+      schema: {{cookiecutter.schema_name}}
 
   prod:
     mode: production
     workspace:
       host: {{cookiecutter.workspace_url}}
+      # Replace with your prod workspace URL
+      # Get this from the hub platform team
+    run_as:
+      service_principal_name: {{cookiecutter.project_slug}}-prod-sp
+      # Replace with the actual service principal name
+      # Get this from the hub platform team
     variables:
       catalog: {{cookiecutter.catalog_name}}_prod
+      schema: {{cookiecutter.schema_name}}

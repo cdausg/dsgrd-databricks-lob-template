@@ -6,33 +6,40 @@ resources:
         quartz_cron_expression: "0 0 2 * * ?"
         timezone_id: "UTC"
       tasks:
-        # Step 1 - Feature engineering
-        - task_key: feature_engineering
+        # Step 1 - Ingest raw data
+        - task_key: ingest_data
           pipeline_task:
-            pipeline_id: ${resources.pipelines.feature_pipeline.id}
+            pipeline_id: ${resources.pipelines.ingestion_pipeline.id}
 
-        # Step 2 - Train and evaluate models
+        # Step 2 - Compute and register features in Feature Store
+        - task_key: compute_features
+          depends_on:
+            - task_key: ingest_data
+          run_job_task:
+            job_id: ${resources.jobs.feature_table_job.id}
+
+        # Step 3 - Train and evaluate models
         - task_key: train_and_evaluate
           depends_on:
-            - task_key: feature_engineering
+            - task_key: compute_features
           run_job_task:
             job_id: ${resources.jobs.training_job.id}
 
-        # Step 3a - Batch inference (always runs)
+        # Step 4a - Batch inference (always runs)
         - task_key: batch_inference
           depends_on:
             - task_key: train_and_evaluate
           pipeline_task:
             pipeline_id: ${resources.pipelines.inference_pipeline.id}
 
-        # Step 3b - Deploy serving endpoint (optional - delete if not needed)
+        # Step 4b - Deploy serving endpoint (optional - delete if not needed)
         - task_key: deploy_serving
           depends_on:
             - task_key: train_and_evaluate
           run_job_task:
             job_id: ${resources.jobs.serving_job.id}
 
-        # Step 4 - Monitoring (runs after inference)
+        # Step 5 - Run monitoring (runs after inference)
         - task_key: run_monitoring
           depends_on:
             - task_key: batch_inference
