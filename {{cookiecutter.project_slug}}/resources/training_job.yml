@@ -9,38 +9,74 @@ resources:
             spark_version: ${var.spark_version}
             node_type_id: ${var.node_type_id}
             num_workers: 2
+
       tasks:
         # Classification training - delete if not needed
         - task_key: train_classification
           job_cluster_key: default
-          spark_python_task:
-            python_file: ../src/{{cookiecutter.project_slug}}/training/classification/train.py
-            parameters:
-              - "--catalog=${var.catalog}"
-              - "--schema=${var.schema}"
-              - "--model-name=${var.model_name}_classification"
-              - "--experiment-path=${var.mlflow_experiment_path}/classification"
+          notebook_task:
+            notebook_path: ../src/{{cookiecutter.project_slug}}/training/classification/train.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              model_name: ${var.model_name}_classification
+              experiment_path: ${var.mlflow_experiment_path}/classification
 
         # Time series training - delete if not needed
         - task_key: train_time_series
           job_cluster_key: default
-          spark_python_task:
-            python_file: ../src/{{cookiecutter.project_slug}}/training/time_series/train.py
-            parameters:
-              - "--catalog=${var.catalog}"
-              - "--schema=${var.schema}"
-              - "--model-name=${var.model_name}_time_series"
-              - "--experiment-path=${var.mlflow_experiment_path}/time_series"
+          notebook_task:
+            notebook_path: ../src/{{cookiecutter.project_slug}}/training/time_series/train.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              model_name: ${var.model_name}_time_series
+              experiment_path: ${var.mlflow_experiment_path}/time_series
+              horizon: "30"
 
         # Clustering training - delete if not needed
         - task_key: train_clustering
           job_cluster_key: default
-          spark_python_task:
-            python_file: ../src/{{cookiecutter.project_slug}}/training/clustering/train.py
-            parameters:
-              - "--catalog=${var.catalog}"
-              - "--schema=${var.schema}"
-              - "--model-name=${var.model_name}_clustering"
-              - "--experiment-path=${var.mlflow_experiment_path}/clustering"
+          notebook_task:
+            notebook_path: ../src/{{cookiecutter.project_slug}}/training/clustering/train.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              model_name: ${var.model_name}_clustering
+              experiment_path: ${var.mlflow_experiment_path}/clustering
+              n_clusters: "5"
 
         # Evaluation - runs after all training tasks
+        - task_key: evaluate_classification
+          depends_on:
+            - task_key: train_classification
+          job_cluster_key: default
+          notebook_task:
+            notebook_path: ../src/{{cookiecutter.project_slug}}/evaluation/classification/evaluate.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              model_name: ${var.model_name}_classification
+
+        - task_key: evaluate_time_series
+          depends_on:
+            - task_key: train_time_series
+          job_cluster_key: default
+          notebook_task:
+            notebook_path: ../src/{{cookiecutter.project_slug}}/evaluation/time_series/evaluate.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              model_name: ${var.model_name}_time_series
+              horizon: "30"
+
+        - task_key: evaluate_clustering
+          depends_on:
+            - task_key: train_clustering
+          job_cluster_key: default
+          notebook_task:
+            notebook_path: ../src/{{cookiecutter.project_slug}}/evaluation/clustering/evaluate.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              model_name: ${var.model_name}_clustering

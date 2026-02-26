@@ -1,49 +1,94 @@
+# Databricks notebook source
 # Time Series Model Evaluation
 # Implements champion/challenger pattern using MLflow and Unity Catalog model registry
-# Replace thresholds and metrics with your own requirements
 
-import argparse
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # {{cookiecutter.lob_display_name}} - Time Series Model Evaluation
+# MAGIC
+# MAGIC This notebook:
+# MAGIC 1. Loads the latest challenger model from Unity Catalog
+# MAGIC 2. Evaluates it against the current champion on a holdout period
+# MAGIC 3. Promotes the challenger to champion if it outperforms
+# MAGIC
+# MAGIC Adjust the promotion threshold and metric to match your business requirements.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Setup
+
+# COMMAND ----------
+
 import mlflow
 from mlflow import MlflowClient
-from pyspark.sql import SparkSession
+from databricks.feature_engineering import FeatureEngineeringClient
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import pandas as pd
 import numpy as np
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--catalog", required=True)
-    parser.add_argument("--schema", required=True)
-    parser.add_argument("--model-name", required=True)
-    parser.add_argument("--horizon", type=int, default=30)
-    return parser.parse_args()
+# COMMAND ----------
 
-def load_test_data(spark, catalog, schema):
-    """Load time series test data from Unity Catalog."""
-    return spark.table(f"{catalog}.{schema}.feature_table").toPandas()
+dbutils.widgets.text("catalog", "{{cookiecutter.catalog_name}}_dev")
+dbutils.widgets.text("schema", "{{cookiecutter.schema_name}}")
+dbutils.widgets.text("model_name", "{{cookiecutter.model_name}}_time_series")
+dbutils.widgets.text("horizon", "30")
 
-def get_champion_model(client, model_uri):
-    """Get the current champion model if one exists."""
-    try:
-        client.get_model_version_by_alias(model_uri, "champion")
-        return mlflow.pyfunc.load_model(f"models:/{model_uri}@champion")
-    except Exception:
-        return None
+catalog = dbutils.widgets.get("catalog")
+schema = dbutils.widgets.get("schema")
+model_name = dbutils.widgets.get("model_name")
+horizon = int(dbutils.widgets.get("horizon"))
 
-def get_challenger_model(client, model_uri):
-    """Get the latest challenger model."""
-    versions = client.search_model_versions(f"name='{model_uri}'")
-    if not versions:
-        raise ValueError(f"No model versions found for {model_uri}")
-    latest = sorted(versions, key=lambda x: int(x.version), reverse=True)[0]
-    return mlflow.pyfunc.load_model(f"models:/{model_uri}/{latest.version}"), latest.version
+model_uri = f"{catalog}.{schema}.{model_name}"
 
-def evaluate_model(model, df, horizon):
+print(f"Catalog: {catalog}")
+print(f"Schema: {schema}")
+print(f"Model URI: {model_uri}")
+print(f"Horizon: {horizon} days")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 1. Load Test Data
+
+# COMMAND ----------
+
+mlflow.set_registry_uri("databricks-uc")
+client = MlflowClient()
+fe = FeatureEngineeringClient()
+
+# Load time series data for evaluation
+label_df = spark.table(f"{catalog}.{schema}.labels").select("id", "ds", "y")
+
+feature_table_name = f"{catalog}.{schema}.{{cookiecutter.project_slug}}_features"
+eval_set = fe.create_training_set(
+    df=label_df,
+    feature_lookups=[
+        {
+            "table_name": feature_table_name,
+            "lookup_key": "id",
+            "timestamp_lookup_key": None
+        }
+    ],
+    label="y",
+    exclude_columns=["id"]
+)
+
+df = eval_set.load_df().toPandas()
+test_df = df[-horizon:]
+future = pd.DataFrame({"ds": test_df["ds"]})
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 2. Evaluate Challenger Model
+
+# COMMAND ----------
+
+def evaluate_model(model, test_df, future, horizon):
     """Evaluate time series model on holdout period."""
-    test_df = df[-horizon:]
-    future = pd.DataFrame({"ds": test_df["ds"]})
-    forecast = model.predict(future)
-
+    forecast = model.predict(None, future)
     y_true = test_df["y"].values
     y_pred = forecast["yhat"].values[-horizon:]
 
@@ -53,38 +98,60 @@ def evaluate_model(model, df, horizon):
         "mape": np.mean(np.abs((y_true - y_pred) / y_true)) * 100
     }
 
-def main():
-    args = parse_args()
-    spark = SparkSession.builder.getOrCreate()
+# COMMAND ----------
 
-    mlflow.set_registry_uri("databricks-uc")
-    client = MlflowClient()
-    model_uri = f"{args.catalog}.{args.schema}.{args.model_name}"
+versions = client.search_model_versions(f"name='{model_uri}'")
+if not versions:
+    raise ValueError(f"No model versions found for {model_uri}")
 
-    df = load_test_data(spark, args.catalog, args.schema)
+challenger_version = sorted(versions, key=lambda x: int(x.version), reverse=True)[0]
+challenger_model = mlflow.pyfunc.load_model(
+    f"models:/{model_uri}/{challenger_version.version}"
+)
 
-    # Evaluate challenger
-    challenger_model, challenger_version = get_challenger_model(client, model_uri)
-    challenger_metrics = evaluate_model(challenger_model, df, args.horizon)
-    print(f"Challenger metrics: {challenger_metrics}")
+challenger_metrics = evaluate_model(challenger_model, test_df, future, horizon)
+print(f"Challenger version: {challenger_version.version}")
+print(f"Challenger metrics: {challenger_metrics}")
 
-    # Compare with champion if one exists
-    champion_model = get_champion_model(client, model_uri)
+# COMMAND ----------
 
-    if champion_model is None:
-        print("No champion found - promoting challenger to champion")
-        client.set_registered_model_alias(model_uri, "champion", challenger_version)
+# MAGIC %md
+# MAGIC ## 3. Compare with Champion and Promote if Better
+
+# COMMAND ----------
+
+try:
+    client.get_model_version_by_alias(model_uri, "champion")
+    champion_model = mlflow.pyfunc.load_model(f"models:/{model_uri}@champion")
+    champion_metrics = evaluate_model(champion_model, test_df, future, horizon)
+    print(f"Champion metrics: {champion_metrics}")
+
+    # Promote challenger if MAE improves by more than 1%
+    # Adjust the threshold and metric to your own requirements
+    if challenger_metrics["mae"] < champion_metrics["mae"] * 0.99:
+        print("Challenger outperforms champion - promoting to champion")
+        client.set_registered_model_alias(model_uri, "champion", challenger_version.version)
     else:
-        champion_metrics = evaluate_model(champion_model, df, args.horizon)
-        print(f"Champion metrics: {champion_metrics}")
+        print("Champion retained - challenger did not meet promotion threshold")
 
-        # Promote challenger if MAE improves by more than 1%
-        # Adjust the threshold and metric to your own requirements
-        if challenger_metrics["mae"] < champion_metrics["mae"] * 0.99:
-            print("Challenger outperforms champion - promoting to champion")
-            client.set_registered_model_alias(model_uri, "champion", challenger_version)
-        else:
-            print("Champion retained - challenger did not meet promotion threshold")
+except Exception:
+    print("No champion found - promoting challenger to champion")
+    client.set_registered_model_alias(model_uri, "champion", challenger_version.version)
 
-if __name__ == "__main__":
-    main()
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 4. Log Evaluation Results
+
+# COMMAND ----------
+
+with mlflow.start_run():
+    mlflow.log_metrics(challenger_metrics)
+    mlflow.log_params({
+        "catalog": catalog,
+        "schema": schema,
+        "model_name": model_name,
+        "challenger_version": challenger_version.version,
+        "horizon": horizon
+    })
+    print("Evaluation results logged to MLflow")

@@ -5,12 +5,14 @@
     "catalog_name": "",
     "schema_name": "default",
     "workspace_url": "",
+    "cloud_provider": ["azure", "aws"],
     "spark_version": "15.4.x-scala2.12",
     "node_type_id": "Standard_DS3_v2",
     "cluster_policy_id": "",
     "engineer_group": "",
     "model_name": "",
     "mlflow_experiment_path": "/Shared/{{cookiecutter.project_slug}}/experiments",
+    "cicd_platform": ["github_actions", "azure_devops"],
     "__prompts__": {
         "project_slug": "Project name (lowercase, underscores only, e.g. lob_a_churn_prediction)",
         "lob_name": "Line of business identifier (e.g. lob-a)",
@@ -18,11 +20,13 @@
         "catalog_name": "Unity Catalog catalog name (get this from the hub platform team)",
         "schema_name": "Default schema name (leave as 'default' unless instructed otherwise)",
         "workspace_url": "Databricks workspace URL (get this from the hub platform team)",
+        "cloud_provider": "Cloud provider (azure or aws)",
         "spark_version": "Databricks runtime version (confirm with hub platform team)",
-        "node_type_id": "Azure VM node type (confirm with hub platform team)",
+        "node_type_id": "VM node type (confirm with hub platform team - Azure: Standard_DS3_v2, AWS: i3.xlarge)",
         "cluster_policy_id": "Cluster policy ID (get this from the hub platform team)",
-        "engineer_group": "Entra ID group for your team (e.g. lob-a-engineers@client.com)",
+        "engineer_group": "Entra ID / IAM group for your team (e.g. lob-a-engineers@client.com)",
         "model_name": "MLflow registered model name (e.g. lob_a_churn_prediction_model)",
-        "mlflow_experiment_path": "MLflow experiment path (leave default unless instructed otherwise)"
+        "mlflow_experiment_path": "MLflow experiment path (leave default unless instructed otherwise)",
+        "cicd_platform": "CI/CD platform (github_actions or azure_devops) - delete the unused folder after generation"
     }
 }

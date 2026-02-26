@@ -1,62 +1,113 @@
 # Databricks notebook source
-# Delta Live Tables - Feature Engineering Pipeline
-# Replace this example with your own feature definitions
+# Feature Engineering Pipeline
+# Uses Databricks Feature Engineering API to create and register feature tables
+# This enables feature sharing and reuse across projects and LOBs
 
-import dlt
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # {{cookiecutter.lob_display_name}} - Feature Engineering
+# MAGIC
+# MAGIC This notebook:
+# MAGIC 1. Reads raw data from the bronze/silver layer
+# MAGIC 2. Engineers features
+# MAGIC 3. Registers features in the Databricks Feature Store
+# MAGIC
+# MAGIC Feature Store tables are discoverable and reusable across projects.
+# MAGIC Contact the hub platform team to share features with other LOBs.
+
+# COMMAND ----------
+
+from databricks.feature_engineering import FeatureEngineeringClient
 from pyspark.sql import functions as F
 
-# ---------------------------------------------------------------
-# Bronze layer - raw data ingestion
-# Replace the source path and schema with your own data source
-# ---------------------------------------------------------------
+# COMMAND ----------
 
-@dlt.table(
-    name="raw_data",
-    comment="Raw data ingested from source system",
-    table_properties={"quality": "bronze"}
+# MAGIC %md
+# MAGIC ## Setup
+
+# COMMAND ----------
+
+# Get parameters - set defaults for interactive development
+dbutils.widgets.text("catalog", "{{cookiecutter.catalog_name}}_dev")
+dbutils.widgets.text("schema", "{{cookiecutter.schema_name}}")
+
+catalog = dbutils.widgets.get("catalog")
+schema = dbutils.widgets.get("schema")
+
+print(f"Catalog: {catalog}")
+print(f"Schema: {schema}")
+
+fe = FeatureEngineeringClient()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 1. Read Source Data
+# MAGIC Replace this with your actual data source
+
+# COMMAND ----------
+
+# Read from silver layer - replace with your actual table
+# For streaming sources use readStream instead
+df_source = spark.table(f"{catalog}.{schema}.cleaned_data")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 2. Engineer Features
+# MAGIC Replace these transformations with your own feature engineering logic
+
+# COMMAND ----------
+
+df_features = (
+    df_source
+    .withColumn("feature_1", F.col("value_1") / F.col("value_2"))
+    .withColumn("feature_2", F.log1p(F.col("value_3")))
+    .withColumn("feature_3", F.when(F.col("category") == "A", 1).otherwise(0))
+    .withColumn("feature_updated_timestamp", F.current_timestamp())
+    # Select only the columns needed for the feature table
+    # The primary key column (id) must be included
+    .select(
+        "id",
+        "feature_1",
+        "feature_2",
+        "feature_3",
+        "feature_updated_timestamp"
+    )
 )
-def raw_data():
-    return (
-        spark.readStream
-        .format("cloudFiles")
-        .option("cloudFiles.format", "csv")
-        .option("cloudFiles.inferColumnTypes", "true")
-        .load("/Volumes/{{cookiecutter.catalog_name}}/{{cookiecutter.schema_name}}/raw/")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 3. Create or Update Feature Table
+
+# COMMAND ----------
+
+feature_table_name = f"{catalog}.{schema}.{{cookiecutter.project_slug}}_features"
+
+# Create feature table if it doesn't exist
+try:
+    fe.get_table(name=feature_table_name)
+    print(f"Feature table already exists: {feature_table_name}")
+except Exception:
+    print(f"Creating feature table: {feature_table_name}")
+    fe.create_table(
+        name=feature_table_name,
+        primary_keys=["id"],
+        timestamp_keys=["feature_updated_timestamp"],
+        schema=df_features.schema,
+        description=f"Feature table for {{cookiecutter.project_slug}} - managed by {{cookiecutter.lob_display_name}}"
     )
 
-# ---------------------------------------------------------------
-# Silver layer - cleaned and validated data
-# Add your own data quality expectations and transformations
-# ---------------------------------------------------------------
+# COMMAND ----------
 
-@dlt.table(
-    name="cleaned_data",
-    comment="Cleaned and validated data",
-    table_properties={"quality": "silver"}
+# Write features to the feature table
+fe.write_table(
+    name=feature_table_name,
+    df=df_features,
+    mode="merge"  # Use 'overwrite' for full refresh
 )
-@dlt.expect_or_drop("valid_id", "id IS NOT NULL")
-@dlt.expect_or_drop("valid_timestamp", "event_timestamp IS NOT NULL")
-def cleaned_data():
-    return (
-        dlt.read_stream("raw_data")
-        .withColumn("processed_timestamp", F.current_timestamp())
-        .dropDuplicates(["id"])
-    )
 
-# ---------------------------------------------------------------
-# Gold layer - feature table for ML training
-# Add your own feature engineering logic here
-# ---------------------------------------------------------------
-
-@dlt.table(
-    name="feature_table",
-    comment="Feature table for ML model training",
-    table_properties={"quality": "gold"}
-)
-def feature_table():
-    return (
-        dlt.read("cleaned_data")
-        .withColumn("feature_1", F.col("value_1") / F.col("value_2"))
-        .withColumn("feature_2", F.log1p(F.col("value_3")))
-        .withColumn("feature_3", F.when(F.col("category") == "A", 1).otherwise(0))
-    )
+print(f"Features written to: {feature_table_name}")
+print(f"Row count: {df_features.count()}")

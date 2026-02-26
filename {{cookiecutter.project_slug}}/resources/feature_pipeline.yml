@@ -1,13 +1,13 @@
 resources:
   pipelines:
-    feature_pipeline:
-      name: "{{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}} Feature Pipeline"
+    ingestion_pipeline:
+      name: "{{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}} Ingestion Pipeline"
       catalog: ${var.catalog}
       target: ${var.catalog}
       channel: CURRENT
       libraries:
         - notebook:
-            path: ../src/{{cookiecutter.project_slug}}/features/feature_pipeline.py
+            path: ../src/{{cookiecutter.project_slug}}/features/ingestion_pipeline.py
       clusters:
         - label: default
           policy_id: ${var.cluster_policy_id}
