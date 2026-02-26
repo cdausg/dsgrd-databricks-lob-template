@@ -95,7 +95,6 @@ except Exception:
     fe.create_table(
         name=feature_table_name,
         primary_keys=["id"],
-        timestamp_keys=["feature_updated_timestamp"],
         schema=df_features.schema,
         description=f"Feature table for {{cookiecutter.project_slug}} - managed by {{cookiecutter.lob_display_name}}"
     )

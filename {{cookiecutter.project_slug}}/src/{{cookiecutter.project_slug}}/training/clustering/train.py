@@ -22,7 +22,7 @@
 
 import mlflow
 import mlflow.sklearn
-from databricks.feature_engineering import FeatureEngineeringClient
+from databricks.feature_engineering import FeatureEngineeringClient, FeatureLookup
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import silhouette_score, davies_bouldin_score
@@ -34,7 +34,7 @@ import numpy as np
 dbutils.widgets.text("catalog", "{{cookiecutter.catalog_name}}_dev")
 dbutils.widgets.text("schema", "{{cookiecutter.schema_name}}")
 dbutils.widgets.text("model_name", "{{cookiecutter.model_name}}_clustering")
-dbutils.widgets.text("experiment_path", "{{cookiecutter.mlflow_experiment_path}}/clustering")
+dbutils.widgets.text("experiment_path", "/Shared/{{cookiecutter.project_slug}}/experiments/clustering")
 dbutils.widgets.text("n_clusters", "5")
 
 catalog = dbutils.widgets.get("catalog")
@@ -57,6 +57,13 @@ print(f"N clusters: {n_clusters}")
 
 fe = FeatureEngineeringClient()
 mlflow.set_registry_uri("databricks-uc")
+
+# Create parent workspace directory if it doesn't exist
+import os
+from databricks.sdk import WorkspaceClient
+_ws = WorkspaceClient()
+_ws.workspace.mkdirs(os.path.dirname(experiment_path))
+
 mlflow.set_experiment(experiment_path)
 
 feature_table_name = f"{catalog}.{schema}.{{cookiecutter.project_slug}}_features"
@@ -67,11 +74,10 @@ entity_df = spark.table(f"{catalog}.{schema}.entities").select("id")
 training_set = fe.create_training_set(
     df=entity_df,
     feature_lookups=[
-        {
-            "table_name": feature_table_name,
-            "lookup_key": "id",
-            "timestamp_lookup_key": None
-        }
+        FeatureLookup(
+            table_name=feature_table_name,
+            lookup_key="id"
+        )
     ],
     label=None,  # No label for unsupervised learning
     exclude_columns=["id"]

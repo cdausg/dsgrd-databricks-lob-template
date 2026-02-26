@@ -3,8 +3,11 @@ resources:
     ingestion_pipeline:
       name: "{{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}} Ingestion Pipeline"
       catalog: ${var.catalog}
-      target: ${var.catalog}
+      target: ${var.schema}
       channel: CURRENT
+      configuration:
+        pipeline.catalog: ${var.catalog}
+        pipeline.schema: ${var.schema}
       libraries:
         - notebook:
             path: ../src/{{cookiecutter.project_slug}}/features/ingestion_pipeline.py
@@ -12,6 +15,7 @@ resources:
         - label: default
           policy_id: ${var.cluster_policy_id}
           node_type_id: ${var.node_type_id}
-          autoscale:
+          {% if cookiecutter.instance_pool_id %}instance_pool_id: {{cookiecutter.instance_pool_id}}
+          {% endif %}autoscale:
             min_workers: 1
             max_workers: 4

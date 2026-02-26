@@ -34,6 +34,8 @@ from pyspark.sql import functions as F
     table_properties={"quality": "bronze"}
 )
 def raw_data():
+    catalog = spark.conf.get("pipeline.catalog")
+    schema = spark.conf.get("pipeline.schema", "default")
     return (
         spark.readStream
         .format("cloudFiles")
@@ -41,7 +43,7 @@ def raw_data():
         .option("cloudFiles.inferColumnTypes", "true")
         # Azure: abfss://container@storageaccount.dfs.core.windows.net/path
         # AWS: s3://bucket/path
-        .load("/Volumes/{{cookiecutter.catalog_name}}/{{cookiecutter.schema_name}}/raw/")
+        .load(f"/Volumes/{catalog}/{schema}/raw/")
     )
 
 # COMMAND ----------

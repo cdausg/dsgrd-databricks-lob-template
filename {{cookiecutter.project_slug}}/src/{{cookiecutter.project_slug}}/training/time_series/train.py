@@ -22,7 +22,7 @@
 
 import mlflow
 import mlflow.pyfunc
-from databricks.feature_engineering import FeatureEngineeringClient
+from databricks.feature_engineering import FeatureEngineeringClient, FeatureLookup
 from prophet import Prophet
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import pandas as pd
@@ -33,7 +33,7 @@ import numpy as np
 dbutils.widgets.text("catalog", "{{cookiecutter.catalog_name}}_dev")
 dbutils.widgets.text("schema", "{{cookiecutter.schema_name}}")
 dbutils.widgets.text("model_name", "{{cookiecutter.model_name}}_time_series")
-dbutils.widgets.text("experiment_path", "{{cookiecutter.mlflow_experiment_path}}/time_series")
+dbutils.widgets.text("experiment_path", "/Shared/{{cookiecutter.project_slug}}/experiments/time_series")
 dbutils.widgets.text("horizon", "30")
 
 catalog = dbutils.widgets.get("catalog")
@@ -56,6 +56,13 @@ print(f"Horizon: {horizon} days")
 
 fe = FeatureEngineeringClient()
 mlflow.set_registry_uri("databricks-uc")
+
+# Create parent workspace directory if it doesn't exist
+import os
+from databricks.sdk import WorkspaceClient
+_ws = WorkspaceClient()
+_ws.workspace.mkdirs(os.path.dirname(experiment_path))
+
 mlflow.set_experiment(experiment_path)
 
 feature_table_name = f"{catalog}.{schema}.{{cookiecutter.project_slug}}_features"
@@ -67,11 +74,10 @@ label_df = spark.table(f"{catalog}.{schema}.labels").select("id", "ds", "y")
 training_set = fe.create_training_set(
     df=label_df,
     feature_lookups=[
-        {
-            "table_name": feature_table_name,
-            "lookup_key": "id",
-            "timestamp_lookup_key": None
-        }
+        FeatureLookup(
+            table_name=feature_table_name,
+            lookup_key="id"
+        )
     ],
     label="y",
     exclude_columns=["id"]

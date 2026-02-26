@@ -8,7 +8,8 @@ resources:
             policy_id: ${var.cluster_policy_id}
             spark_version: ${var.spark_version}
             node_type_id: ${var.node_type_id}
-            autoscale:
+            {% if cookiecutter.instance_pool_id %}instance_pool_id: {{cookiecutter.instance_pool_id}}
+            {% endif %}autoscale:
               min_workers: 1
               max_workers: 4
 
@@ -16,6 +17,9 @@ resources:
         # Classification training - delete if not needed
         - task_key: train_classification
           job_cluster_key: default
+          libraries:
+            - pypi:
+                package: databricks-feature-engineering
           notebook_task:
             notebook_path: ../src/{{cookiecutter.project_slug}}/training/classification/train.py
             base_parameters:
@@ -27,6 +31,9 @@ resources:
         # Time series training - delete if not needed
         - task_key: train_time_series
           job_cluster_key: default
+          libraries:
+            - pypi:
+                package: databricks-feature-engineering
           notebook_task:
             notebook_path: ../src/{{cookiecutter.project_slug}}/training/time_series/train.py
             base_parameters:
@@ -39,6 +46,9 @@ resources:
         # Clustering training - delete if not needed
         - task_key: train_clustering
           job_cluster_key: default
+          libraries:
+            - pypi:
+                package: databricks-feature-engineering
           notebook_task:
             notebook_path: ../src/{{cookiecutter.project_slug}}/training/clustering/train.py
             base_parameters:
@@ -53,6 +63,9 @@ resources:
           depends_on:
             - task_key: train_classification
           job_cluster_key: default
+          libraries:
+            - pypi:
+                package: databricks-feature-engineering
           notebook_task:
             notebook_path: ../src/{{cookiecutter.project_slug}}/evaluation/classification/evaluate.py
             base_parameters:
@@ -64,6 +77,9 @@ resources:
           depends_on:
             - task_key: train_time_series
           job_cluster_key: default
+          libraries:
+            - pypi:
+                package: databricks-feature-engineering
           notebook_task:
             notebook_path: ../src/{{cookiecutter.project_slug}}/evaluation/time_series/evaluate.py
             base_parameters:
@@ -76,6 +92,9 @@ resources:
           depends_on:
             - task_key: train_clustering
           job_cluster_key: default
+          libraries:
+            - pypi:
+                package: databricks-feature-engineering
           notebook_task:
             notebook_path: ../src/{{cookiecutter.project_slug}}/evaluation/clustering/evaluate.py
             base_parameters:

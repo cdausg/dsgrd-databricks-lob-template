@@ -8,7 +8,8 @@ resources:
             policy_id: ${var.cluster_policy_id}
             spark_version: ${var.spark_version}
             node_type_id: ${var.node_type_id}
-            autoscale:
+            {% if cookiecutter.instance_pool_id %}instance_pool_id: {{cookiecutter.instance_pool_id}}
+            {% endif %}autoscale:
               min_workers: 1
               max_workers: 4
       schedule:
@@ -17,6 +18,9 @@ resources:
       tasks:
         - task_key: compute_features
           job_cluster_key: default
+          libraries:
+            - pypi:
+                package: databricks-feature-engineering
           notebook_task:
             notebook_path: ../src/{{cookiecutter.project_slug}}/features/feature_pipeline.py
             base_parameters:

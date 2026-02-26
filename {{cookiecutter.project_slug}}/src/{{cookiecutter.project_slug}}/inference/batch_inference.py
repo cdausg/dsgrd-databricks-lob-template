@@ -25,8 +25,11 @@ def load_champion_model(catalog, schema, model_name):
     table_properties={"quality": "silver"}
 )
 def inference_input():
+    catalog = spark.conf.get("pipeline.catalog")
+    schema = spark.conf.get("pipeline.schema", "default")
+    feature_table = f"{catalog}.{schema}.{{cookiecutter.project_slug}}_features"
     return (
-        dlt.read("feature_table")
+        spark.read.table(feature_table)
         .filter(F.col("id").isNotNull())
     )
 
