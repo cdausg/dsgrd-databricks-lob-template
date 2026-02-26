@@ -21,8 +21,8 @@ variables:
     description: Cluster policy ID - get this from the hub platform team
     default: {{cookiecutter.cluster_policy_id}}
   model_name:
-    description: MLflow registered model name
-    default: {{cookiecutter.model_name}}
+    description: MLflow registered model name (classification model used for inference and serving)
+    default: {{cookiecutter.model_name}}_classification
   mlflow_experiment_path:
     description: MLflow experiment path
     default: {{cookiecutter.mlflow_experiment_path}}
