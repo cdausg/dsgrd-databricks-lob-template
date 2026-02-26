@@ -67,7 +67,9 @@ This combination is less common but supported. Connect GitHub Actions to your Az
 | `lob_display_name` | LOB display name | `LOB A` |
 | `catalog_name` | Unity Catalog catalog name — get from hub platform team | `lob_a` |
 | `schema_name` | Schema name (leave as `default` unless told otherwise) | `default` |
-| `workspace_url` | Databricks workspace URL — get from hub platform team | `https://adb-xxx.azuredatabricks.net` |
+| `workspace_url_dev` | Databricks workspace URL for dev — get from hub platform team | `https://adb-xxx.azuredatabricks.net` |
+| `workspace_url_staging` | Databricks workspace URL for staging — get from hub platform team | `https://adb-yyy.azuredatabricks.net` |
+| `workspace_url_prod` | Databricks workspace URL for prod — get from hub platform team | `https://adb-zzz.azuredatabricks.net` |
 | `cloud_provider` | Cloud provider | `azure` or `aws` |
 | `spark_version` | Databricks runtime version — confirm with hub platform team | `15.4.x-scala2.12` |
 | `node_type_id` | VM node type — confirm with hub platform team | `Standard_DS3_v2` |

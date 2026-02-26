@@ -57,7 +57,7 @@ jobs:
 
       - name: Validate bundle
         env:
-          DATABRICKS_HOST: {{cookiecutter.workspace_url}}
+          DATABRICKS_HOST: {{cookiecutter.workspace_url_dev}}
           DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
         run: databricks bundle validate
 
@@ -91,7 +91,7 @@ jobs:
 
       - name: Deploy to dev
         env:
-          DATABRICKS_HOST: {{cookiecutter.workspace_url}}
+          DATABRICKS_HOST: {{cookiecutter.workspace_url_dev}}
           DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
         run: databricks bundle deploy --target dev
 
@@ -125,7 +125,7 @@ jobs:
 
       - name: Deploy to staging
         env:
-          DATABRICKS_HOST: {{cookiecutter.workspace_url}}
+          DATABRICKS_HOST: {{cookiecutter.workspace_url_staging}}
           DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
         run: databricks bundle deploy --target staging
 
@@ -160,6 +160,6 @@ jobs:
 
       - name: Deploy to prod
         env:
-          DATABRICKS_HOST: {{cookiecutter.workspace_url}}
+          DATABRICKS_HOST: {{cookiecutter.workspace_url_prod}}
           DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
         run: databricks bundle deploy --target prod

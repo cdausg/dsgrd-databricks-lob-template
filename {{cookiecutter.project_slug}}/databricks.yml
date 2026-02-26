@@ -36,7 +36,7 @@ targets:
     mode: development
     default: true
     workspace:
-      host: {{cookiecutter.workspace_url}}
+      host: {{cookiecutter.workspace_url_dev}}
     variables:
       catalog: {{cookiecutter.catalog_name}}_dev
       schema: {{cookiecutter.schema_name}}
@@ -44,9 +44,7 @@ targets:
   staging:
     mode: production
     workspace:
-      host: {{cookiecutter.workspace_url}}
-      # Replace with your staging workspace URL if different from dev
-      # Get this from the hub platform team
+      host: {{cookiecutter.workspace_url_staging}}
     run_as:
       service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-staging
     variables:
@@ -56,9 +54,7 @@ targets:
   prod:
     mode: production
     workspace:
-      host: {{cookiecutter.workspace_url}}
-      # Replace with your prod workspace URL if different from dev
-      # Get this from the hub platform team
+      host: {{cookiecutter.workspace_url_prod}}
     run_as:
       service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-prod
     variables:
