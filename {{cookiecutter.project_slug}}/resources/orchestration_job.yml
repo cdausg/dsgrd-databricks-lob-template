@@ -1,0 +1,40 @@
+resources:
+  jobs:
+    orchestration_job:
+      name: "{{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}} Orchestration Job"
+      schedule:
+        quartz_cron_expression: "0 0 2 * * ?"
+        timezone_id: "UTC"
+      tasks:
+        # Step 1 - Feature engineering
+        - task_key: feature_engineering
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.feature_pipeline.id}
+
+        # Step 2 - Train and evaluate models
+        - task_key: train_and_evaluate
+          depends_on:
+            - task_key: feature_engineering
+          run_job_task:
+            job_id: ${resources.jobs.training_job.id}
+
+        # Step 3a - Batch inference (always runs)
+        - task_key: batch_inference
+          depends_on:
+            - task_key: train_and_evaluate
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.inference_pipeline.id}
+
+        # Step 3b - Deploy serving endpoint (optional - delete if not needed)
+        - task_key: deploy_serving
+          depends_on:
+            - task_key: train_and_evaluate
+          run_job_task:
+            job_id: ${resources.jobs.serving_job.id}
+
+        # Step 4 - Monitoring (runs after inference)
+        - task_key: run_monitoring
+          depends_on:
+            - task_key: batch_inference
+          run_job_task:
+            job_id: ${resources.jobs.monitoring_job.id}

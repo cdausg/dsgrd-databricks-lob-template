@@ -1,0 +1,150 @@
+# -----------------------------------------------------------------
+# Bundle Deploy Workflow
+# Triggered when changes are pushed to main or release branches
+# Deploys the LOB bundle to the appropriate target workspace
+# -----------------------------------------------------------------
+
+name: Deploy LOB Bundle
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+    paths:
+      - 'src/**'
+      - 'resources/**'
+      - 'databricks.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'resources/**'
+      - 'databricks.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+      - name: Validate bundle
+        env:
+          DATABRICKS_HOST: {{cookiecutter.workspace_url}}
+          DATABRICKS_TOKEN: placeholder
+        run: databricks bundle validate
+
+  deploy-dev:
+    name: Deploy to Dev
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v1
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get Databricks token from Key Vault
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            token=$(az keyvault secret show --vault-name kv-dsgrd-hub --name "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-DEV" --query "value" -o tsv)
+            echo "::add-mask::$token"
+            echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+      - name: Deploy to dev
+        env:
+          DATABRICKS_HOST: {{cookiecutter.workspace_url}}
+          DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
+        run: databricks bundle deploy --target dev
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: deploy-dev
+    if: startsWith(github.ref, 'refs/heads/release/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v1
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get Databricks token from Key Vault
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            token=$(az keyvault secret show --vault-name kv-dsgrd-hub --name "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-STAGING" --query "value" -o tsv)
+            echo "::add-mask::$token"
+            echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+      - name: Deploy to staging
+        env:
+          DATABRICKS_HOST: {{cookiecutter.workspace_url}}
+          DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
+        run: databricks bundle deploy --target staging
+
+  deploy-prod:
+    name: Deploy to Prod
+    needs: deploy-staging
+    if: startsWith(github.ref, 'refs/heads/release/') && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v1
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get Databricks token from Key Vault
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            token=$(az keyvault secret show --vault-name kv-dsgrd-hub --name "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-PROD" --query "value" -o tsv)
+            echo "::add-mask::$token"
+            echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+      - name: Deploy to prod
+        env:
+          DATABRICKS_HOST: {{cookiecutter.workspace_url}}
+          DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
+        run: databricks bundle deploy --target prod

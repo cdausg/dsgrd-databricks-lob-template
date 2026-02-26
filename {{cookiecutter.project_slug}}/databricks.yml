@@ -1,0 +1,50 @@
+bundle:
+  name: {{cookiecutter.project_slug}}
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Target catalog
+    default: {{cookiecutter.catalog_name}}
+  schema:
+    description: Target schema
+    default: {{cookiecutter.schema_name}}
+  spark_version:
+    description: Databricks runtime version
+    default: {{cookiecutter.spark_version}}
+  node_type_id:
+    description: Azure VM node type
+    default: {{cookiecutter.node_type_id}}
+  cluster_policy_id:
+    description: Cluster policy ID
+    default: {{cookiecutter.cluster_policy_id}}
+  model_name:
+    description: MLflow registered model name
+    default: {{cookiecutter.model_name}}
+  mlflow_experiment_path:
+    description: MLflow experiment path
+    default: {{cookiecutter.mlflow_experiment_path}}
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: {{cookiecutter.workspace_url}}
+    variables:
+      catalog: {{cookiecutter.catalog_name}}_dev
+
+  staging:
+    workspace:
+      host: {{cookiecutter.workspace_url}}
+    variables:
+      catalog: {{cookiecutter.catalog_name}}_staging
+
+  prod:
+    mode: production
+    workspace:
+      host: {{cookiecutter.workspace_url}}
+    variables:
+      catalog: {{cookiecutter.catalog_name}}_prod

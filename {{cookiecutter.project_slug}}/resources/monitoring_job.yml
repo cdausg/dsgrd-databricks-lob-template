@@ -1,0 +1,36 @@
+resources:
+  jobs:
+    monitoring_job:
+      name: "{{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}} Monitoring Job"
+      job_clusters:
+        - job_cluster_key: default
+          new_cluster:
+            policy_id: ${var.cluster_policy_id}
+            spark_version: ${var.spark_version}
+            node_type_id: ${var.node_type_id}
+            num_workers: 1
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: "UTC"
+      tasks:
+        - task_key: setup_feature_monitoring
+          job_cluster_key: default
+          spark_python_task:
+            python_file: ../src/{{cookiecutter.project_slug}}/monitoring/setup_monitoring.py
+            parameters:
+              - "--catalog=${var.catalog}"
+              - "--schema=${var.schema}"
+              - "--table=feature_table"
+              - "--model-name=${var.model_name}"
+
+        - task_key: setup_inference_monitoring
+          depends_on:
+            - task_key: setup_feature_monitoring
+          job_cluster_key: default
+          spark_python_task:
+            python_file: ../src/{{cookiecutter.project_slug}}/monitoring/setup_monitoring.py
+            parameters:
+              - "--catalog=${var.catalog}"
+              - "--schema=${var.schema}"
+              - "--table=inference_results"
+              - "--model-name=${var.model_name}"

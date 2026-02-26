@@ -1,0 +1,15 @@
+resources:
+  pipelines:
+    feature_pipeline:
+      name: "{{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}} Feature Pipeline"
+      catalog: ${var.catalog}
+      target: ${var.catalog}
+      channel: CURRENT
+      libraries:
+        - notebook:
+            path: ../src/{{cookiecutter.project_slug}}/features/feature_pipeline.py
+      clusters:
+        - label: default
+          policy_id: ${var.cluster_policy_id}
+          node_type_id: ${var.node_type_id}
+          num_workers: 1
