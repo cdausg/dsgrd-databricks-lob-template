@@ -90,7 +90,7 @@ df = training_set.load_df().toPandas()
 
 # COMMAND ----------
 
-X = df.drop(columns=["target"])
+X = df.drop(columns=["target"]).select_dtypes(include=["number"])
 y = df["target"]
 
 X_train, X_test, y_train, y_test = train_test_split(

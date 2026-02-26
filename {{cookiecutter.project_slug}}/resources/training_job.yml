@@ -3,7 +3,25 @@ resources:
     training_job:
       name: "{{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}} Training Job"
       job_clusters:
-        - job_cluster_key: default
+        - job_cluster_key: cluster_classification
+          new_cluster:
+            policy_id: ${var.cluster_policy_id}
+            spark_version: ${var.spark_version}
+            node_type_id: ${var.node_type_id}
+            {% if cookiecutter.instance_pool_id %}instance_pool_id: {{cookiecutter.instance_pool_id}}
+            {% endif %}autoscale:
+              min_workers: 1
+              max_workers: 4
+        - job_cluster_key: cluster_time_series
+          new_cluster:
+            policy_id: ${var.cluster_policy_id}
+            spark_version: ${var.spark_version}
+            node_type_id: ${var.node_type_id}
+            {% if cookiecutter.instance_pool_id %}instance_pool_id: {{cookiecutter.instance_pool_id}}
+            {% endif %}autoscale:
+              min_workers: 1
+              max_workers: 4
+        - job_cluster_key: cluster_clustering
           new_cluster:
             policy_id: ${var.cluster_policy_id}
             spark_version: ${var.spark_version}
@@ -16,7 +34,7 @@ resources:
       tasks:
         # Classification training - delete if not needed
         - task_key: train_classification
-          job_cluster_key: default
+          job_cluster_key: cluster_classification
           libraries:
             - pypi:
                 package: databricks-feature-engineering
@@ -30,10 +48,12 @@ resources:
 
         # Time series training - delete if not needed
         - task_key: train_time_series
-          job_cluster_key: default
+          job_cluster_key: cluster_time_series
           libraries:
             - pypi:
                 package: databricks-feature-engineering
+            - pypi:
+                package: prophet
           notebook_task:
             notebook_path: ../src/{{cookiecutter.project_slug}}/training/time_series/train.py
             base_parameters:
@@ -45,7 +65,7 @@ resources:
 
         # Clustering training - delete if not needed
         - task_key: train_clustering
-          job_cluster_key: default
+          job_cluster_key: cluster_clustering
           libraries:
             - pypi:
                 package: databricks-feature-engineering
@@ -62,7 +82,7 @@ resources:
         - task_key: evaluate_classification
           depends_on:
             - task_key: train_classification
-          job_cluster_key: default
+          job_cluster_key: cluster_classification
           libraries:
             - pypi:
                 package: databricks-feature-engineering
@@ -76,7 +96,7 @@ resources:
         - task_key: evaluate_time_series
           depends_on:
             - task_key: train_time_series
-          job_cluster_key: default
+          job_cluster_key: cluster_time_series
           libraries:
             - pypi:
                 package: databricks-feature-engineering
@@ -91,7 +111,7 @@ resources:
         - task_key: evaluate_clustering
           depends_on:
             - task_key: train_clustering
-          job_cluster_key: default
+          job_cluster_key: cluster_clustering
           libraries:
             - pypi:
                 package: databricks-feature-engineering

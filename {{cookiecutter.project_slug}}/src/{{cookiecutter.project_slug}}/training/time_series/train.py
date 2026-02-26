@@ -105,6 +105,7 @@ class ProphetWrapper(mlflow.pyfunc.PythonModel):
 
 # COMMAND ----------
 
+df = df[["ds", "y"]].dropna()
 train_df = df[:-horizon]
 test_df = df[-horizon:]
 

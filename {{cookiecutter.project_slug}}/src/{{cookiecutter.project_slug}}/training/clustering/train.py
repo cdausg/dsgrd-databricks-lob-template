@@ -68,8 +68,8 @@ mlflow.set_experiment(experiment_path)
 
 feature_table_name = f"{catalog}.{schema}.{{cookiecutter.project_slug}}_features"
 
-# For clustering there is no label - load all entities from the feature table
-entity_df = spark.table(f"{catalog}.{schema}.entities").select("id")
+# For clustering there is no label - use the feature table itself as the entity source
+entity_df = spark.table(feature_table_name).select("id")
 
 training_set = fe.create_training_set(
     df=entity_df,
@@ -93,8 +93,8 @@ df = training_set.load_df().toPandas()
 
 # COMMAND ----------
 
-feature_cols = [c for c in df.columns if c not in
-               ["id", "event_timestamp", "processed_timestamp"]]
+feature_cols = [c for c in df.select_dtypes(include=["number"]).columns
+               if c not in ["id"]]
 X = df[feature_cols].fillna(0)
 
 scaler = StandardScaler()
