@@ -57,8 +57,12 @@ def inference_results():
         model_name=spark.conf.get("pipeline.model_name")
     )
 
-    feature_cols = [c for c in dlt.read("inference_input").columns
-                   if c not in ["id", "event_timestamp", "processed_timestamp"]]
+    # Use only numeric columns, excluding non-feature columns.
+    # Must match the feature set used during training (numeric-only, no timestamps).
+    _exclude = {"id", "feature_updated_timestamp", "event_timestamp", "processed_timestamp"}
+    input_df = dlt.read("inference_input")
+    feature_cols = [c for c in input_df.columns
+                   if c not in _exclude and dict(input_df.dtypes)[c] in ("int", "bigint", "double", "float")]
 
     return (
         dlt.read("inference_input")

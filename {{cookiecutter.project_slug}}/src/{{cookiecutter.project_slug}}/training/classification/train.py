@@ -22,6 +22,7 @@
 
 import mlflow
 import mlflow.sklearn
+from mlflow.models.signature import infer_signature
 from databricks.feature_engineering import FeatureEngineeringClient, FeatureLookup
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
@@ -115,12 +116,14 @@ with mlflow.start_run() as run:
     })
     mlflow.log_metrics(metrics)
 
-    # Log model with Feature Store - preserves feature lineage
-    fe.log_model(
-        model=model,
+    # Log directly with sklearn so the signature matches the numeric-only features used at training.
+    # fe.log_model bakes in the full Feature Store schema (including feature_updated_timestamp)
+    # which causes schema mismatch errors at inference time.
+    signature = infer_signature(X_train, model.predict(X_train))
+    mlflow.sklearn.log_model(
+        sk_model=model,
         artifact_path="model",
-        flavor=mlflow.sklearn,
-        training_set=training_set,
+        signature=signature,
         registered_model_name=f"{catalog}.{schema}.{model_name}"
     )
 
