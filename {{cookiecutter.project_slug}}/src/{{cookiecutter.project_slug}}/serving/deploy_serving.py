@@ -70,13 +70,21 @@ def validate_endpoint(w, endpoint_name):
 
     for i in range(max_retries):
         endpoint = w.serving_endpoints.get(name=endpoint_name)
-        state = endpoint.state.ready.value if endpoint.state.ready else "NOT_READY"
+        ready_state = endpoint.state.ready.value if endpoint.state.ready else "NOT_READY"
+        config_update = endpoint.state.config_update.value if endpoint.state.config_update else None
 
-        if state == "READY":
+        if ready_state == "READY":
             print(f"Endpoint {endpoint_name} is ready")
             return True
 
-        print(f"Waiting for endpoint to be ready... ({i+1}/{max_retries})")
+        # Fail fast if the update itself has failed rather than waiting out the full timeout
+        if config_update == "UPDATE_FAILED":
+            raise RuntimeError(
+                f"Endpoint {endpoint_name} update failed. "
+                "Check the serving endpoint event log in the Databricks UI for details."
+            )
+
+        print(f"Endpoint state: {ready_state}, config_update: {config_update} ({i+1}/{max_retries})")
         time.sleep(retry_interval)
 
     raise TimeoutError(f"Endpoint {endpoint_name} did not become ready in time")
