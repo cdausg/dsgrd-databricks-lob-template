@@ -45,12 +45,10 @@ targets:
     mode: production
     workspace:
       host: {{cookiecutter.workspace_url}}
-      # Replace with your staging workspace URL
+      # Replace with your staging workspace URL if different from dev
       # Get this from the hub platform team
     run_as:
-      service_principal_name: {{cookiecutter.project_slug}}-staging-sp
-      # Replace with the actual service principal name
-      # Get this from the hub platform team
+      service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-staging
     variables:
       catalog: {{cookiecutter.catalog_name}}_staging
       schema: {{cookiecutter.schema_name}}
@@ -59,12 +57,10 @@ targets:
     mode: production
     workspace:
       host: {{cookiecutter.workspace_url}}
-      # Replace with your prod workspace URL
+      # Replace with your prod workspace URL if different from dev
       # Get this from the hub platform team
     run_as:
-      service_principal_name: {{cookiecutter.project_slug}}-prod-sp
-      # Replace with the actual service principal name
-      # Get this from the hub platform team
+      service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-prod
     variables:
       catalog: {{cookiecutter.catalog_name}}_prod
       schema: {{cookiecutter.schema_name}}
