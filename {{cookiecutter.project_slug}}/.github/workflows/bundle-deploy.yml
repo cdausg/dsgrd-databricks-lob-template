@@ -39,9 +39,9 @@ jobs:
       - name: Azure Login (OIDC)
         uses: azure/login@v1
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          client-id: {% raw %}${{ vars.AZURE_CLIENT_ID }}{% endraw %}
+          tenant-id: {% raw %}${{ vars.AZURE_TENANT_ID }}{% endraw %}
+          subscription-id: {% raw %}${{ vars.AZURE_SUBSCRIPTION_ID }}{% endraw %}
 
       - name: Get Databricks token from Key Vault
         uses: azure/CLI@v1
@@ -58,7 +58,7 @@ jobs:
       - name: Validate bundle
         env:
           DATABRICKS_HOST: {{cookiecutter.workspace_url_dev}}
-          DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
+          DATABRICKS_TOKEN: {% raw %}${{ env.DATABRICKS_TOKEN }}{% endraw %}
         run: databricks bundle validate
 
   deploy-dev:
@@ -73,9 +73,9 @@ jobs:
       - name: Azure Login (OIDC)
         uses: azure/login@v1
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          client-id: {% raw %}${{ vars.AZURE_CLIENT_ID }}{% endraw %}
+          tenant-id: {% raw %}${{ vars.AZURE_TENANT_ID }}{% endraw %}
+          subscription-id: {% raw %}${{ vars.AZURE_SUBSCRIPTION_ID }}{% endraw %}
 
       - name: Get Databricks token from Key Vault
         uses: azure/CLI@v1
@@ -92,7 +92,7 @@ jobs:
       - name: Deploy to dev
         env:
           DATABRICKS_HOST: {{cookiecutter.workspace_url_dev}}
-          DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
+          DATABRICKS_TOKEN: {% raw %}${{ env.DATABRICKS_TOKEN }}{% endraw %}
         run: databricks bundle deploy --target dev
 
   deploy-staging:
@@ -107,9 +107,9 @@ jobs:
       - name: Azure Login (OIDC)
         uses: azure/login@v1
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          client-id: {% raw %}${{ vars.AZURE_CLIENT_ID }}{% endraw %}
+          tenant-id: {% raw %}${{ vars.AZURE_TENANT_ID }}{% endraw %}
+          subscription-id: {% raw %}${{ vars.AZURE_SUBSCRIPTION_ID }}{% endraw %}
 
       - name: Get Databricks token from Key Vault
         uses: azure/CLI@v1
@@ -126,7 +126,7 @@ jobs:
       - name: Deploy to staging
         env:
           DATABRICKS_HOST: {{cookiecutter.workspace_url_staging}}
-          DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
+          DATABRICKS_TOKEN: {% raw %}${{ env.DATABRICKS_TOKEN }}{% endraw %}
         run: databricks bundle deploy --target staging
 
   deploy-prod:
@@ -142,9 +142,9 @@ jobs:
       - name: Azure Login (OIDC)
         uses: azure/login@v1
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          client-id: {% raw %}${{ vars.AZURE_CLIENT_ID }}{% endraw %}
+          tenant-id: {% raw %}${{ vars.AZURE_TENANT_ID }}{% endraw %}
+          subscription-id: {% raw %}${{ vars.AZURE_SUBSCRIPTION_ID }}{% endraw %}
 
       - name: Get Databricks token from Key Vault
         uses: azure/CLI@v1
@@ -161,5 +161,5 @@ jobs:
       - name: Deploy to prod
         env:
           DATABRICKS_HOST: {{cookiecutter.workspace_url_prod}}
-          DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
+          DATABRICKS_TOKEN: {% raw %}${{ env.DATABRICKS_TOKEN }}{% endraw %}
         run: databricks bundle deploy --target prod
