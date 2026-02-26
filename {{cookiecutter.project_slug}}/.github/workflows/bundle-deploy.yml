@@ -132,7 +132,7 @@ jobs:
   deploy-prod:
     name: Deploy to Prod
     needs: deploy-staging
-    if: startsWith(github.ref, 'refs/heads/release/') && github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/heads/release/')
     runs-on: ubuntu-latest
     environment: production
     steps:

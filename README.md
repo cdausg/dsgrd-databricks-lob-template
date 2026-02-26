@@ -1,154 +1,99 @@
-# {{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}}
+# dsgrd-databricks-lob-template
 
-This is the official blueprint template for creating new Databricks projects in the hub and spoke platform.
+GitHub template repository and Cookiecutter template for scaffolding new MLOps projects on the Databricks hub-and-spoke platform.
 
-## Project Overview
-<!-- Describe your use case here -->
+## What this template generates
 
-## Architecture
-This project follows the standard hub and spoke MLops architecture:
-```
-Data Ingestion (DLT)
-        ↓
-Feature Engineering (Databricks Feature Store)
-        ↓
-Model Training (MLflow + Unity Catalog)
-        ↓
-Model Evaluation (Champion/Challenger)
-        ↓
-Batch Inference (DLT) / Model Serving
-        ↓
-Result Layer (Gold tables → BI tools)
-```
+A fully structured Databricks MLOps project including:
 
-## Model Archetypes
-This project supports the following model archetypes — delete the ones you don't need:
-- **Classification** — binary or multi-class prediction
-- **Time Series** — forecasting and demand planning
-- **Clustering** — segmentation and anomaly detection
+- **DLT ingestion pipeline** — bronze/silver layers with Auto Loader
+- **Feature engineering** — Databricks Feature Engineering API, Unity Catalog feature tables
+- **Model training** — classification, time series (Prophet), and clustering archetypes
+- **Model evaluation** — champion/challenger pattern using MLflow model aliases
+- **Batch inference** — DLT pipeline writing Gold tables (Live Lake model)
+- **Model serving** — optional real-time endpoint deployment via Databricks SDK
+- **Monitoring** — Databricks Lakehouse Monitoring for data and model drift
+- **End-to-end orchestration** — single orchestration job wiring all steps together
+- **CI/CD** — both GitHub Actions and Azure DevOps pipelines included
+- **EU AI Act docs** — model card, bias log, and risk classification templates
 
-## Getting Started
+## How to use
 
-### Prerequisites
-- Databricks CLI installed (`curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh`)
-- Access to `{{cookiecutter.workspace_url}}`
-- Unity Catalog access to `{{cookiecutter.catalog_name}}`
+The template supports any combination of Git host and CI/CD platform. Both `.github/workflows/` and `.azure/pipelines/` are generated — delete the folder you don't need.
 
-### Option A — GitHub repo (GitHub Actions CI/CD)
-1. Click "Use this template" on GitHub to create your repo
-2. Delete the `.azure/` folder — you won't need it
-3. Set up GitHub Actions variables in your repo settings:
+### Option A — GitHub repo + GitHub Actions
+
+1. Click **Use this template** on GitHub to create your repo, or run Cookiecutter (see below)
+2. Replace all `{{cookiecutter.*}}` placeholders with your actual values (skip if using Cookiecutter)
+3. Delete the `.azure/` folder
+4. Set up GitHub Actions variables in your repo settings:
    - `AZURE_TENANT_ID`
    - `AZURE_CLIENT_ID`
    - `AZURE_SUBSCRIPTION_ID`
-4. Push to `main` to trigger deployment to dev
+5. Push to `main` to trigger your first deployment to dev
 
-### Option B — Azure DevOps repo (Azure DevOps Pipelines)
-1. Run Cookiecutter locally:
-```bash
-   cookiecutter gh:your-org/dsgrd-databricks-lob-template
-```
-2. Push the generated project to your Azure DevOps repo
-3. Delete the `.github/` folder — you won't need it
-4. Create a pipeline in Azure DevOps pointing to `.azure/pipelines/bundle-deploy.yml`
-5. Create a variable group named `databricks-lob-variables` with:
+### Option B — GitHub repo + Azure DevOps Pipelines
+
+1. Click **Use this template** on GitHub to create your repo, or run Cookiecutter
+2. Replace all `{{cookiecutter.*}}` placeholders with your actual values (skip if using Cookiecutter)
+3. Delete the `.github/` folder
+4. In Azure DevOps, create a pipeline pointing to `.azure/pipelines/bundle-deploy.yml`
+5. Connect the pipeline to your GitHub repo
+6. Create a variable group named `databricks-lob-variables` with:
    - `AZURE_SERVICE_CONNECTION` — name of your Azure service connection in Azure DevOps
 
-### Option C — GitHub repo (Azure DevOps Pipelines)
-1. Click "Use this template" on GitHub or run Cookiecutter
-2. Keep both CI/CD folders or delete the one you don't use
-3. Connect Azure DevOps Pipelines to your GitHub repo
-4. Follow step 4-5 from Option B
+### Option C — Azure DevOps repo + Azure DevOps Pipelines
 
-### Deploy manually
+1. Run Cookiecutter locally and push the generated project to your Azure DevOps repo:
 ```bash
-# Deploy to dev
-databricks bundle deploy --target dev
-
-# Deploy to staging
-databricks bundle deploy --target staging
-
-# Deploy to prod
-databricks bundle deploy --target prod
+pip install cookiecutter
+cookiecutter gh:your-org/dsgrd-databricks-lob-template
 ```
+2. Delete the `.github/` folder
+3. In Azure DevOps, create a pipeline pointing to `.azure/pipelines/bundle-deploy.yml`
+4. Create a variable group named `databricks-lob-variables` with:
+   - `AZURE_SERVICE_CONNECTION` — name of your Azure service connection in Azure DevOps
 
-### Run pipelines manually
-```bash
-# Ingest data
-databricks bundle run ingestion_pipeline
+### Option D — Azure DevOps repo + GitHub Actions
 
-# Compute features
-databricks bundle run feature_table_job
+This combination is less common but supported. Connect GitHub Actions to your Azure DevOps repo using a GitHub mirror or Azure DevOps service hook, then follow Option A steps for the pipeline setup.
 
-# Train and evaluate models
-databricks bundle run training_job
+## Cookiecutter variables
 
-# Run batch inference
-databricks bundle run inference_pipeline
+| Variable | Description | Example |
+|---|---|---|
+| `project_slug` | Project name (lowercase, underscores) | `lob_a_churn_prediction` |
+| `lob_name` | LOB identifier | `lob-a` |
+| `lob_display_name` | LOB display name | `LOB A` |
+| `catalog_name` | Unity Catalog catalog name — get from hub platform team | `lob_a` |
+| `schema_name` | Schema name (leave as `default` unless told otherwise) | `default` |
+| `workspace_url` | Databricks workspace URL — get from hub platform team | `https://adb-xxx.azuredatabricks.net` |
+| `cloud_provider` | Cloud provider | `azure` or `aws` |
+| `spark_version` | Databricks runtime version — confirm with hub platform team | `15.4.x-scala2.12` |
+| `node_type_id` | VM node type — confirm with hub platform team | `Standard_DS3_v2` |
+| `cluster_policy_id` | Cluster policy ID — get from hub platform team | |
+| `engineer_group` | Entra ID / IAM group for your team | `lob-a-engineers@client.com` |
+| `model_name` | MLflow registered model name | `lob_a_churn_prediction_model` |
+| `mlflow_experiment_path` | MLflow experiment path | `/Shared/lob_a_churn_prediction/experiments` |
+| `cicd_platform` | CI/CD platform — delete the unused folder after generation | `github_actions` or `azure_devops` |
 
-# Deploy serving endpoint (optional)
-databricks bundle run serving_job
+## What you need from the hub platform team
 
-# Run monitoring
-databricks bundle run monitoring_job
-```
+Before generating a project, collect the following from the hub platform team:
 
-## Project Structure
-```
-├── resources/                          # Databricks Asset Bundle resource definitions
-│   ├── feature_pipeline.yml            # DLT ingestion pipeline (bronze/silver)
-│   ├── feature_table_job.yml           # Feature Store job
-│   ├── training_job.yml                # Model training and evaluation
-│   ├── inference_pipeline.yml          # Batch inference pipeline
-│   ├── serving_job.yml                 # Model serving deployment
-│   ├── monitoring_job.yml              # Lakehouse monitoring
-│   └── orchestration_job.yml          # End-to-end orchestration
-├── src/
-│   └── {{cookiecutter.project_slug}}/
-│       ├── features/
-│       │   ├── ingestion_pipeline.py   # DLT bronze/silver ingestion
-│       │   └── feature_pipeline.py     # Feature Store feature engineering
-│       ├── training/
-│       │   ├── classification/         # Classification model training
-│       │   ├── time_series/            # Time series model training
-│       │   └── clustering/             # Clustering model training
-│       ├── evaluation/
-│       │   ├── classification/         # Champion/challenger evaluation
-│       │   ├── time_series/            # Champion/challenger evaluation
-│       │   └── clustering/             # Champion/challenger evaluation
-│       ├── inference/                  # Batch inference pipeline
-│       ├── serving/                    # Model serving endpoint deployment
-│       └── monitoring/                 # Lakehouse monitoring setup
-├── tests/                              # Unit tests
-├── notebooks/exploratory/              # Ad-hoc exploration notebooks
-├── docs/                               # EU AI Act documentation templates
-├── .github/workflows/                  # GitHub Actions CI/CD
-└── .azure/pipelines/                   # Azure DevOps CI/CD
-```
+- Workspace URL for each environment (dev / staging / prod)
+- Unity Catalog catalog name for your LOB
+- Cluster policy ID
+- Approved Spark runtime version and node type
 
-## Feature Store
-Features are managed via the Databricks Feature Engineering API and stored in Unity Catalog.
-The feature table `{{cookiecutter.catalog_name}}.{{cookiecutter.schema_name}}.{{cookiecutter.project_slug}}_features`
-is registered in the Feature Store and can be shared with other projects.
+## CI/CD flow
 
-Contact the hub platform team to share features with other LOBs or to consume
-features produced by other teams.
+| Event | Action |
+|---|---|
+| PR to `main` | Validate bundle |
+| Push to `main` | Validate + deploy to **dev** |
+| Push to `release/*` | Validate + deploy to **dev** → **staging** → **prod** (prod requires approval via environment gate) |
 
-## Monitoring
-This project uses Databricks Lakehouse Monitoring for standard platform monitoring
-(data drift, model drift). Ground truth monitoring is the responsibility of the
-project team and is out of scope for the central platform.
+## Related
 
-## EU AI Act
-See `docs/risk_classification.md` to determine the risk tier of your use case.
-High-risk systems require additional documentation — see `docs/model_card.md`
-and `docs/bias_log.md`.
-
-## Support
-Contact the hub platform team for:
-- Access issues
-- Package approval requests
-- Feature Store sharing across LOBs
-- Platform questions
-
-For use-case specific questions, contact {{cookiecutter.engineer_group}}.
+- [dsgrd-databricks-hub](https://github.com/your-org/dsgrd-databricks-hub) — Hub infrastructure repo (Terraform + shared bundles)
