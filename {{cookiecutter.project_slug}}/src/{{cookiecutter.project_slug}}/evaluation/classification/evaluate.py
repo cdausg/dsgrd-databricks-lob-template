@@ -24,7 +24,7 @@
 
 import mlflow
 from mlflow import MlflowClient
-from databricks.feature_engineering import FeatureEngineeringClient, FeatureLookup
+from databricks.feature_engineering import FeatureEngineeringClient
 from sklearn.metrics import accuracy_score, f1_score
 import pandas as pd
 
@@ -55,26 +55,8 @@ mlflow.set_registry_uri("databricks-uc")
 client = MlflowClient()
 fe = FeatureEngineeringClient()
 
-# Load labels for evaluation
+# Load labels for evaluation - keep id for fe.score_batch lookup
 label_df = spark.table(f"{catalog}.{schema}.labels").select("id", "target")
-
-# Load features from Feature Store
-feature_table_name = f"{catalog}.{schema}.{{cookiecutter.project_slug}}_features"
-eval_set = fe.create_training_set(
-    df=label_df,
-    feature_lookups=[
-        FeatureLookup(
-            table_name=feature_table_name,
-            lookup_key="id"
-        )
-    ],
-    label="target",
-    exclude_columns=["id"]
-)
-
-df = eval_set.load_df().toPandas()
-X = df.drop(columns=["target"]).select_dtypes(include=["number"])
-y = df["target"]
 
 # COMMAND ----------
 
@@ -83,17 +65,20 @@ y = df["target"]
 
 # COMMAND ----------
 
-def evaluate_model(model, X, y):
-    """Evaluate classification model and return metrics.
-    Model is loaded as pyfunc (fe.log_model registers as pyfunc flavor).
+def evaluate_model(model_uri_versioned, label_df, y_col="target"):
+    """Evaluate classification model using fe.score_batch (handles feature lookups).
+    Returns metrics dict and predictions joined with labels.
     """
-    X_df = pd.DataFrame(X) if not isinstance(X, pd.DataFrame) else X
-    preds = model.predict(X_df)
-    if isinstance(preds, pd.DataFrame):
-        preds = preds.iloc[:, 0].values
+    preds_df = fe.score_batch(
+        model_uri=model_uri_versioned,
+        df=label_df.select("id")
+    )
+    result = preds_df.join(label_df.select("id", y_col), on="id").toPandas()
+    preds = result["prediction"].values
+    y_true = result[y_col].values
     return {
-        "accuracy": accuracy_score(y, preds),
-        "f1_score": f1_score(y, preds, average="weighted"),
+        "accuracy": accuracy_score(y_true, preds),
+        "f1_score": f1_score(y_true, preds, average="weighted"),
     }
 
 # COMMAND ----------
@@ -104,11 +89,9 @@ if not versions:
     raise ValueError(f"No model versions found for {model_uri}")
 
 challenger_version = sorted(versions, key=lambda x: int(x.version), reverse=True)[0]
-challenger_model = mlflow.pyfunc.load_model(
-    f"models:/{model_uri}/{challenger_version.version}"
-)
+challenger_model_uri = f"models:/{model_uri}/{challenger_version.version}"
 
-challenger_metrics = evaluate_model(challenger_model, X, y)
+challenger_metrics = evaluate_model(challenger_model_uri, label_df)
 print(f"Challenger version: {challenger_version.version}")
 print(f"Challenger metrics: {challenger_metrics}")
 
@@ -121,8 +104,7 @@ print(f"Challenger metrics: {challenger_metrics}")
 
 try:
     client.get_model_version_by_alias(model_uri, "champion")
-    champion_model = mlflow.pyfunc.load_model(f"models:/{model_uri}@champion")
-    champion_metrics = evaluate_model(champion_model, X, y)
+    champion_metrics = evaluate_model(f"models:/{model_uri}@champion", label_df)
     print(f"Champion metrics: {champion_metrics}")
 
     # Promote challenger if F1 score improves by more than 1%

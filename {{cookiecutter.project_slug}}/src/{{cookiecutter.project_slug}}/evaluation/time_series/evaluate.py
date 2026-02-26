@@ -23,7 +23,6 @@
 
 import mlflow
 from mlflow import MlflowClient
-from databricks.feature_engineering import FeatureEngineeringClient, FeatureLookup
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import pandas as pd
 import numpy as np
@@ -57,33 +56,15 @@ print(f"Horizon: {horizon} days")
 
 mlflow.set_registry_uri("databricks-uc")
 client = MlflowClient()
-fe = FeatureEngineeringClient()
 
-# Load time series data for evaluation
-# Labels table has "id" and "target" columns; rename "target" to "y" for Prophet
+# Load labels - rename target to y, generate synthetic ds matching training
 label_df = spark.table(f"{catalog}.{schema}.labels").select(
-    "id", F.col("target").alias("y")
-)
+    F.col("target").alias("y")
+).toPandas()
 
-feature_table_name = f"{catalog}.{schema}.{{cookiecutter.project_slug}}_features"
-eval_set = fe.create_training_set(
-    df=label_df,
-    feature_lookups=[
-        FeatureLookup(
-            table_name=feature_table_name,
-            lookup_key="id"
-        )
-    ],
-    label="y",
-    exclude_columns=["id"]
-)
-
-df = eval_set.load_df().toPandas()
-
-# Assign a synthetic daily date series matching how training generated ds
-df = df[["y"]].dropna().reset_index(drop=True)
-df["ds"] = pd.date_range(end=pd.Timestamp.today(), periods=len(df), freq="D")
-df = df[["ds", "y"]]
+label_df = label_df[["y"]].dropna().reset_index(drop=True)
+label_df["ds"] = pd.date_range(end=pd.Timestamp.today(), periods=len(label_df), freq="D")
+df = label_df[["ds", "y"]]
 test_df = df[-horizon:]
 future = pd.DataFrame({"ds": test_df["ds"]})
 
@@ -96,7 +77,7 @@ future = pd.DataFrame({"ds": test_df["ds"]})
 
 def evaluate_model(model, test_df, future, horizon):
     """Evaluate time series model on holdout period."""
-    forecast = model.predict(None, future)
+    forecast = model.predict(future)
     y_true = test_df["y"].values
     y_pred = forecast["yhat"].values[-horizon:]
 

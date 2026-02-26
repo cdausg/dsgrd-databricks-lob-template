@@ -146,11 +146,13 @@ with mlflow.start_run() as run:
     })
     mlflow.log_metrics(metrics)
 
-    fe.log_model(
-        model=ProphetWrapper(model),
+    # Log directly as pyfunc (Prophet only needs ds at inference, not Feature Store lookups)
+    # fe.log_model bakes in the Feature Store schema which breaks predict(future_df)
+    input_example = pd.DataFrame({"ds": pd.date_range(start="2020-01-01", periods=3, freq="D")})
+    mlflow.pyfunc.log_model(
         artifact_path="model",
-        flavor=mlflow.pyfunc,
-        training_set=training_set,
+        python_model=ProphetWrapper(model),
+        input_example=input_example,
         registered_model_name=f"{catalog}.{schema}.{model_name}"
     )
 
