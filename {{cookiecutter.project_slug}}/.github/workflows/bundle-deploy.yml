@@ -36,6 +36,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Azure Login (OIDC)
+        uses: azure/login@v1
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get Databricks token from Key Vault
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            token=$(az keyvault secret show --vault-name kv-dsgrd-hub --name "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-DEV" --query "value" -o tsv)
+            echo "::add-mask::$token"
+            echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
+
       - name: Install Databricks CLI
         run: |
           curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
@@ -43,7 +58,7 @@ jobs:
       - name: Validate bundle
         env:
           DATABRICKS_HOST: {{cookiecutter.workspace_url}}
-          DATABRICKS_TOKEN: placeholder
+          DATABRICKS_TOKEN: ${{ env.DATABRICKS_TOKEN }}
         run: databricks bundle validate
 
   deploy-dev:

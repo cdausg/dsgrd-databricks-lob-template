@@ -5,6 +5,10 @@ resources:
       catalog: ${var.catalog}
       target: ${var.catalog}
       channel: CURRENT
+      configuration:
+        pipeline.catalog: ${var.catalog}
+        pipeline.schema: ${var.schema}
+        pipeline.model_name: ${var.model_name}
       libraries:
         - notebook:
             path: ../src/{{cookiecutter.project_slug}}/inference/batch_inference.py

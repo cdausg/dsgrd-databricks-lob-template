@@ -16,7 +16,7 @@ def parse_args():
     parser.add_argument("--catalog", required=True)
     parser.add_argument("--schema", required=True)
     parser.add_argument("--model-name", required=True)
-    parser.add_argument("--validate-only", type=bool, default=False)
+    parser.add_argument("--validate-only", action="store_true", default=False)
     return parser.parse_args()
 
 def get_champion_version(catalog, schema, model_name):

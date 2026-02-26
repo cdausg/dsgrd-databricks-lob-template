@@ -27,5 +27,6 @@ resources:
             python_file: ../src/{{cookiecutter.project_slug}}/serving/deploy_serving.py
             parameters:
               - "--catalog=${var.catalog}"
+              - "--schema=${var.schema}"
               - "--model-name=${var.model_name}"
-              - "--validate-only=true"
+              - "--validate-only"
