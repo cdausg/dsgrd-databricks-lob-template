@@ -5,14 +5,25 @@
 
 import dlt
 import mlflow
+import mlflow.sklearn
+import pandas as pd
 from pyspark.sql import functions as F
-from pyspark.sql.types import DoubleType, StringType
+from pyspark.sql.types import DoubleType
+from pyspark.sql.functions import pandas_udf
 
-# Load champion model from Unity Catalog as a Spark UDF
-# This ensures the latest approved model is always used
-def load_champion_model(catalog, schema, model_name):
+# Load champion model as a broadcast pandas UDF (avoids Flask dependency of pyfunc.spark_udf)
+def make_predict_udf(catalog, schema, model_name):
     model_uri = f"models:/{catalog}.{schema}.{model_name}@champion"
-    return mlflow.pyfunc.spark_udf(spark, model_uri=model_uri)
+    model = mlflow.sklearn.load_model(model_uri)
+    bc_model = spark.sparkContext.broadcast(model)
+
+    @pandas_udf(DoubleType())
+    def predict(*cols):
+        X = pd.concat(cols, axis=1)
+        X.columns = [str(i) for i in range(len(cols))]
+        return pd.Series(bc_model.value.predict(X).astype(float))
+
+    return predict
 
 # ---------------------------------------------------------------
 # Silver layer - prepared inference input
@@ -48,10 +59,7 @@ def inference_input():
     }
 )
 def inference_results():
-    # Load champion model
-    # Replace catalog/schema/model_name with your actual values
-    # or pass them in via pipeline parameters
-    predict_udf = load_champion_model(
+    predict_udf = make_predict_udf(
         catalog=spark.conf.get("pipeline.catalog"),
         schema=spark.conf.get("pipeline.schema", "default"),
         model_name=spark.conf.get("pipeline.model_name")
@@ -65,16 +73,14 @@ def inference_results():
                    if c not in _exclude and dict(input_df.dtypes)[c] in ("int", "bigint", "double", "float")]
 
     return (
-        dlt.read("inference_input")
-        .withColumn("prediction", predict_udf(F.struct(*feature_cols)))
+        input_df
+        .withColumn("prediction", predict_udf(*[F.col(c) for c in feature_cols]))
         .withColumn("inference_timestamp", F.current_timestamp())
         .withColumn("model_version", F.lit("champion"))
-        # Result layer - ready for direct BI tool consumption
         .select(
             "id",
             "prediction",
             "inference_timestamp",
             "model_version",
-            # Add any additional columns needed by BI tools here
         )
     )
