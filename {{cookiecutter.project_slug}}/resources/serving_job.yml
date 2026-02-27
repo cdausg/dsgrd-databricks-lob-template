@@ -20,7 +20,7 @@ resources:
             parameters:
               - "--catalog=${var.catalog}"
               - "--schema=${var.schema}"
-              - "--model-name=${var.model_name}"
+              - "--model-name=${var.model_name}_classification"
 
         - task_key: validate_endpoint
           depends_on:
@@ -31,5 +31,5 @@ resources:
             parameters:
               - "--catalog=${var.catalog}"
               - "--schema=${var.schema}"
-              - "--model-name=${var.model_name}"
+              - "--model-name=${var.model_name}_classification"
               - "--validate-only"

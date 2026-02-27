@@ -8,7 +8,7 @@ resources:
       configuration:
         pipeline.catalog: ${var.catalog}
         pipeline.schema: ${var.schema}
-        pipeline.model_name: ${var.model_name}
+        pipeline.model_name: ${var.model_name}_classification
       libraries:
         - notebook:
             path: ../src/{{cookiecutter.project_slug}}/inference/batch_inference.py
