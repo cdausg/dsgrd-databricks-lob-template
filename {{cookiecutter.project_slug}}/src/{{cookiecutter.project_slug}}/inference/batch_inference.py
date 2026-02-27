@@ -21,6 +21,7 @@ def make_predict_udf(catalog, schema, model_name):
         import mlflow
         import mlflow.sklearn
         mlflow.set_tracking_uri("databricks")
+        mlflow.set_registry_uri("databricks-uc")
         model = mlflow.sklearn.load_model(model_uri)
         X = pd.concat(cols, axis=1)
         X.columns = [str(i) for i in range(len(cols))]

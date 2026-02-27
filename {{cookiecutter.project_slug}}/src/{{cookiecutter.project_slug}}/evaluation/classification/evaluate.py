@@ -114,10 +114,10 @@ try:
     champion_metrics = evaluate_model(champion_model, X, y)
     print(f"Champion metrics: {champion_metrics}")
 
-    # Promote challenger if F1 score improves by more than 1%
-    # Adjust the threshold and metric to your own requirements
-    if challenger_metrics["f1_score"] > champion_metrics["f1_score"] * 1.01:
-        print("Challenger outperforms champion - promoting to champion")
+    # Promote challenger if F1 score is at least as good as champion.
+    # Adjust the threshold and metric to your own requirements.
+    if challenger_metrics["f1_score"] >= champion_metrics["f1_score"]:
+        print("Challenger meets promotion threshold - promoting to champion")
         client.set_registered_model_alias(model_uri, "champion", challenger_version.version)
     else:
         print("Champion retained - challenger did not meet promotion threshold")
