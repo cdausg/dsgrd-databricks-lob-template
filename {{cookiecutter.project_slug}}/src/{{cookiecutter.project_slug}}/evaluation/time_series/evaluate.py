@@ -81,10 +81,12 @@ def evaluate_model(model, test_df, future, horizon):
     y_true = test_df["y"].values
     y_pred = forecast["yhat"].values[-horizon:]
 
+    nonzero = y_true != 0
+    mape = np.mean(np.abs((y_true[nonzero] - y_pred[nonzero]) / y_true[nonzero])) * 100 if nonzero.any() else float("nan")
     return {
         "mae": mean_absolute_error(y_true, y_pred),
         "rmse": np.sqrt(mean_squared_error(y_true, y_pred)),
-        "mape": np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+        "mape": mape
     }
 
 # COMMAND ----------

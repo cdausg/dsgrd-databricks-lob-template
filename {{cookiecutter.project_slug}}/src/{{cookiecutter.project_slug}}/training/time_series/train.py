@@ -102,8 +102,8 @@ class ProphetWrapper(mlflow.pyfunc.PythonModel):
         self.model = model
 
     def predict(self, context, model_input):
-        future = self.model.make_future_dataframe(periods=len(model_input))
-        forecast = self.model.predict(future)
+        # model_input must have a 'ds' column with the dates to forecast
+        forecast = self.model.predict(model_input[["ds"]])
         return forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]]
 
 # COMMAND ----------
@@ -131,10 +131,12 @@ with mlflow.start_run() as run:
     y_true = test_df["y"].values
     y_pred = forecast[-horizon:]["yhat"].values
 
+    nonzero = y_true != 0
+    mape = np.mean(np.abs((y_true[nonzero] - y_pred[nonzero]) / y_true[nonzero])) * 100 if nonzero.any() else float("nan")
     metrics = {
         "mae": mean_absolute_error(y_true, y_pred),
         "rmse": np.sqrt(mean_squared_error(y_true, y_pred)),
-        "mape": np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+        "mape": mape
     }
 
     mlflow.log_params({

@@ -128,11 +128,11 @@ try:
     champion_metrics = evaluate_model(champion_model, X_scaled)
     print(f"Champion metrics: {champion_metrics}")
 
-    # Promote challenger if silhouette score improves by more than 1%
-    # Adjust the threshold and metric to your own requirements
+    # Promote challenger if silhouette score is at least as good as champion.
+    # Adjust the threshold and metric to your own requirements.
     # Note: always validate cluster interpretability with business stakeholders
-    if challenger_metrics["silhouette_score"] > champion_metrics["silhouette_score"] * 1.01:
-        print("Challenger outperforms champion - promoting to champion")
+    if challenger_metrics["silhouette_score"] >= champion_metrics["silhouette_score"]:
+        print("Challenger meets promotion threshold - promoting to champion")
         client.set_registered_model_alias(model_uri, "champion", challenger_version.version)
     else:
         print("Champion retained - challenger did not meet promotion threshold")

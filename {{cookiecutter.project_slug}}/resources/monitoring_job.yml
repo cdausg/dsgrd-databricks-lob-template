@@ -23,7 +23,7 @@ resources:
             parameters:
               - "--catalog=${var.catalog}"
               - "--schema=${var.schema}"
-              - "--table=feature_table"
+              - "--table={{cookiecutter.project_slug}}_features"
               - "--model-name=${var.model_name}"
 
         - task_key: setup_inference_monitoring
