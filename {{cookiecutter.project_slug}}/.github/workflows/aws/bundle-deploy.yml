@@ -86,6 +86,12 @@ jobs:
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@v0.236.0
 
+      - name: Validate bundle
+        env:
+          DATABRICKS_HOST: {{cookiecutter.workspace_url_dev}}
+          DATABRICKS_TOKEN: {% raw %}${{ env.DATABRICKS_TOKEN }}{% endraw %}
+        run: databricks bundle validate --target dev
+
       - name: Deploy to dev
         env:
           DATABRICKS_HOST: {{cookiecutter.workspace_url_dev}}
@@ -115,6 +121,12 @@ jobs:
 
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@v0.236.0
+
+      - name: Validate bundle
+        env:
+          DATABRICKS_HOST: {{cookiecutter.workspace_url_staging}}
+          DATABRICKS_TOKEN: {% raw %}${{ env.DATABRICKS_TOKEN }}{% endraw %}
+        run: databricks bundle validate --target staging
 
       - name: Deploy to staging
         env:
@@ -146,6 +158,12 @@ jobs:
 
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@v0.236.0
+
+      - name: Validate bundle
+        env:
+          DATABRICKS_HOST: {{cookiecutter.workspace_url_prod}}
+          DATABRICKS_TOKEN: {% raw %}${{ env.DATABRICKS_TOKEN }}{% endraw %}
+        run: databricks bundle validate --target prod
 
       - name: Deploy to prod
         env:
