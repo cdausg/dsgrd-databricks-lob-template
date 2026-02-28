@@ -52,7 +52,7 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-            token=$(az keyvault secret show --vault-name kv-dsgrd-hub --name "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-DEV" --query "value" -o tsv)
+            token=$(az keyvault secret show --vault-name kv-dsgrd-hub --name "DATABRICKS-TOKEN-{{cookiecutter.lob_name | upper}}-DEV" --query "value" -o tsv)
             echo "::add-mask::$token"
             echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
@@ -85,7 +85,7 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-            token=$(az keyvault secret show --vault-name kv-dsgrd-hub --name "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-DEV" --query "value" -o tsv)
+            token=$(az keyvault secret show --vault-name kv-dsgrd-hub --name "DATABRICKS-TOKEN-{{cookiecutter.lob_name | upper}}-DEV" --query "value" -o tsv)
             echo "::add-mask::$token"
             echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
@@ -124,7 +124,7 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-            token=$(az keyvault secret show --vault-name kv-dsgrd-hub --name "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-STAGING" --query "value" -o tsv)
+            token=$(az keyvault secret show --vault-name kv-dsgrd-hub --name "DATABRICKS-TOKEN-{{cookiecutter.lob_name | upper}}-STAGING" --query "value" -o tsv)
             echo "::add-mask::$token"
             echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
@@ -164,7 +164,7 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-            token=$(az keyvault secret show --vault-name kv-dsgrd-hub --name "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-PROD" --query "value" -o tsv)
+            token=$(az keyvault secret show --vault-name kv-dsgrd-hub --name "DATABRICKS-TOKEN-{{cookiecutter.lob_name | upper}}-PROD" --query "value" -o tsv)
             echo "::add-mask::$token"
             echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 

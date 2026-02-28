@@ -49,7 +49,7 @@ jobs:
 
       - name: Get Databricks token from Secrets Manager
         run: |
-          token=$(aws secretsmanager get-secret-value --secret-id "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-DEV" --query "SecretString" --output text)
+          token=$(aws secretsmanager get-secret-value --secret-id "DATABRICKS-TOKEN-{{cookiecutter.lob_name | upper}}-DEV" --query "SecretString" --output text)
           echo "::add-mask::$token"
           echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
@@ -79,7 +79,7 @@ jobs:
 
       - name: Get Databricks token from Secrets Manager
         run: |
-          token=$(aws secretsmanager get-secret-value --secret-id "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-DEV" --query "SecretString" --output text)
+          token=$(aws secretsmanager get-secret-value --secret-id "DATABRICKS-TOKEN-{{cookiecutter.lob_name | upper}}-DEV" --query "SecretString" --output text)
           echo "::add-mask::$token"
           echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
@@ -115,7 +115,7 @@ jobs:
 
       - name: Get Databricks token from Secrets Manager
         run: |
-          token=$(aws secretsmanager get-secret-value --secret-id "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-STAGING" --query "SecretString" --output text)
+          token=$(aws secretsmanager get-secret-value --secret-id "DATABRICKS-TOKEN-{{cookiecutter.lob_name | upper}}-STAGING" --query "SecretString" --output text)
           echo "::add-mask::$token"
           echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
@@ -152,7 +152,7 @@ jobs:
 
       - name: Get Databricks token from Secrets Manager
         run: |
-          token=$(aws secretsmanager get-secret-value --secret-id "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-PROD" --query "SecretString" --output text)
+          token=$(aws secretsmanager get-secret-value --secret-id "DATABRICKS-TOKEN-{{cookiecutter.lob_name | upper}}-PROD" --query "SecretString" --output text)
           echo "::add-mask::$token"
           echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 

@@ -30,7 +30,7 @@ def get_champion_version(catalog, schema, model_name):
 
 def deploy_endpoint(w, catalog, schema, model_name, model_version):
     """Create or update the model serving endpoint."""
-    endpoint_name = f"{catalog}-{schema}-{model_name}"
+    endpoint_name = f"{catalog}_{schema}_{model_name}"
     model_uri = f"{catalog}.{schema}.{model_name}"
 
     config = EndpointCoreConfigInput(

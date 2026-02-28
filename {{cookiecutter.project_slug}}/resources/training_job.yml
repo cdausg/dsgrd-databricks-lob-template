@@ -9,8 +9,10 @@ resources:
             spark_version: ${var.spark_version}
             node_type_id: ${var.node_type_id}
             data_security_mode: SINGLE_USER
-            {% if cookiecutter.instance_pool_id %}instance_pool_id: {{cookiecutter.instance_pool_id}}
-            {% endif %}autoscale:
+            {% if cookiecutter.instance_pool_id %}
+            instance_pool_id: {{cookiecutter.instance_pool_id}}
+            {% endif %}
+            autoscale:
               min_workers: 1
               max_workers: 4
         - job_cluster_key: cluster_time_series
@@ -19,8 +21,10 @@ resources:
             spark_version: ${var.spark_version}
             node_type_id: ${var.node_type_id}
             data_security_mode: SINGLE_USER
-            {% if cookiecutter.instance_pool_id %}instance_pool_id: {{cookiecutter.instance_pool_id}}
-            {% endif %}autoscale:
+            {% if cookiecutter.instance_pool_id %}
+            instance_pool_id: {{cookiecutter.instance_pool_id}}
+            {% endif %}
+            autoscale:
               min_workers: 1
               max_workers: 4
         - job_cluster_key: cluster_clustering
@@ -29,8 +33,10 @@ resources:
             spark_version: ${var.spark_version}
             node_type_id: ${var.node_type_id}
             data_security_mode: SINGLE_USER
-            {% if cookiecutter.instance_pool_id %}instance_pool_id: {{cookiecutter.instance_pool_id}}
-            {% endif %}autoscale:
+            {% if cookiecutter.instance_pool_id %}
+            instance_pool_id: {{cookiecutter.instance_pool_id}}
+            {% endif %}
+            autoscale:
               min_workers: 1
               max_workers: 4
 

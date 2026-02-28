@@ -8,7 +8,7 @@ resources:
       configuration:
         pipeline.catalog: ${var.catalog}
         pipeline.schema: ${var.schema}
-        pipeline.model_name: ${var.model_name}_classification
+        pipeline.model_name: ${var.model_name}
       libraries:
         - notebook:
             path: ../src/{{cookiecutter.project_slug}}/inference/batch_inference.py
@@ -16,7 +16,9 @@ resources:
         - label: default
           policy_id: ${var.cluster_policy_id}
           node_type_id: ${var.node_type_id}
-          {% if cookiecutter.instance_pool_id %}instance_pool_id: {{cookiecutter.instance_pool_id}}
-          {% endif %}autoscale:
+          {% if cookiecutter.instance_pool_id %}
+          instance_pool_id: {{cookiecutter.instance_pool_id}}
+          {% endif %}
+          autoscale:
             min_workers: 1
             max_workers: 4
