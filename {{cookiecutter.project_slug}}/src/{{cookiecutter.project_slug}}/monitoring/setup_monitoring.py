@@ -4,12 +4,7 @@
 # Ground truth / business accuracy monitoring is out of scope for the central platform
 
 import argparse
-from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.catalog import (
-    MonitorInferenceLog,
-    MonitorInferenceLogProblemType,
-    MonitorSnapshot
-)
+from databricks.lakehouse_monitoring import create_monitor, InferenceLog, Snapshot
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -19,21 +14,21 @@ def parse_args():
     parser.add_argument("--model-name", required=True)
     return parser.parse_args()
 
-def setup_feature_monitoring(w, catalog, schema, table):
+def setup_feature_monitoring(catalog, schema, table):
     """
     Set up snapshot monitoring on the feature table.
     Detects data drift in input features.
     """
     table_name = f"{catalog}.{schema}.{table}"
-    assets_dir = f"/Shared/{catalog}/{schema}/{table}/monitoring"
+    output_schema = f"{catalog}.{schema}"
 
     print(f"Setting up feature monitoring on {table_name}")
 
     try:
-        w.quality_monitors.create(
+        create_monitor(
             table_name=table_name,
-            assets_dir=assets_dir,
-            snapshot=MonitorSnapshot()
+            profile_type=Snapshot(),
+            output_schema_name=output_schema
         )
         print(f"Feature monitoring created for {table_name}")
     except Exception as e:
@@ -42,7 +37,7 @@ def setup_feature_monitoring(w, catalog, schema, table):
         else:
             raise e
 
-def setup_inference_monitoring(w, catalog, schema, table, model_name):
+def setup_inference_monitoring(catalog, schema, table, model_name):
     """
     Set up inference log monitoring on the inference results table.
     Detects model drift and prediction distribution shifts.
@@ -52,23 +47,24 @@ def setup_inference_monitoring(w, catalog, schema, table, model_name):
     and is out of scope for the central platform (Standard-Only model).
     """
     table_name = f"{catalog}.{schema}.{table}"
-    assets_dir = f"/Shared/{catalog}/{schema}/{table}/monitoring"
+    output_schema = f"{catalog}.{schema}"
 
     print(f"Setting up inference monitoring on {table_name}")
 
     try:
-        w.quality_monitors.create(
+        create_monitor(
             table_name=table_name,
-            assets_dir=assets_dir,
-            inference_log=MonitorInferenceLog(
+            profile_type=InferenceLog(
                 # Replace with your actual column names
                 timestamp_col="inference_timestamp",
                 prediction_col="prediction",
                 model_id_col="model_version",
+                granularities=["1 day"],
                 # Set problem type based on your use case:
-                # PROBLEM_TYPE_CLASSIFICATION or PROBLEM_TYPE_REGRESSION
-                problem_type=MonitorInferenceLogProblemType.PROBLEM_TYPE_CLASSIFICATION
-            )
+                # "classification" or "regression"
+                problem_type="classification"
+            ),
+            output_schema_name=output_schema
         )
         print(f"Inference monitoring created for {table_name}")
     except Exception as e:
@@ -79,15 +75,14 @@ def setup_inference_monitoring(w, catalog, schema, table, model_name):
 
 def main():
     args = parse_args()
-    w = WorkspaceClient()
 
-    if args.table == "feature_table":
-        setup_feature_monitoring(w, args.catalog, args.schema, args.table)
+    if args.table.endswith("_features"):
+        setup_feature_monitoring(args.catalog, args.schema, args.table)
     elif args.table == "inference_results":
-        setup_inference_monitoring(w, args.catalog, args.schema, args.table, args.model_name)
+        setup_inference_monitoring(args.catalog, args.schema, args.table, args.model_name)
     else:
         # Default to snapshot monitoring for any other table
-        setup_feature_monitoring(w, args.catalog, args.schema, args.table)
+        setup_feature_monitoring(args.catalog, args.schema, args.table)
 
 if __name__ == "__main__":
     main()

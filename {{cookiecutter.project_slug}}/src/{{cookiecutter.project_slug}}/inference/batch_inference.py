@@ -13,18 +13,27 @@ from pyspark.sql.functions import pandas_udf
 
 # Load champion model inside the UDF so each executor loads it independently.
 # Broadcast variables are unreliable in DLT pipelines due to lifecycle management.
-def make_predict_udf(catalog, schema, model_name):
+def make_predict_udf(catalog, schema, model_name, feature_cols):
     model_uri = f"models:/{catalog}.{schema}.{model_name}@champion"
+    col_names = list(feature_cols)
 
     @pandas_udf(DoubleType())
     def predict(*cols):
         import mlflow
         import mlflow.sklearn
+        from sklearn.tree import DecisionTreeClassifier
         mlflow.set_tracking_uri("databricks")
         mlflow.set_registry_uri("databricks-uc")
         model = mlflow.sklearn.load_model(model_uri)
+        # Patch internal DecisionTreeClassifier estimators that were pickled with
+        # an older sklearn version (< 1.2) which did not have the monotonic_cst
+        # attribute. This allows models trained on older runtimes to run on newer ones.
+        if hasattr(model, "estimators_"):
+            for est in model.estimators_:
+                if not hasattr(est, "monotonic_cst"):
+                    est.monotonic_cst = None
         X = pd.concat(cols, axis=1)
-        X.columns = [str(i) for i in range(len(cols))]
+        X.columns = col_names
         return pd.Series(model.predict(X).astype(float))
 
     return predict
@@ -63,18 +72,19 @@ def inference_input():
     }
 )
 def inference_results():
-    predict_udf = make_predict_udf(
-        catalog=spark.conf.get("pipeline.catalog"),
-        schema=spark.conf.get("pipeline.schema", "default"),
-        model_name=spark.conf.get("pipeline.model_name")
-    )
-
     # Use only numeric columns, excluding non-feature columns.
     # Must match the feature set used during training (numeric-only, no timestamps).
     _exclude = {"id", "feature_updated_timestamp", "event_timestamp", "processed_timestamp"}
     input_df = dlt.read("inference_input")
     feature_cols = [c for c in input_df.columns
                    if c not in _exclude and dict(input_df.dtypes)[c] in ("int", "bigint", "double", "float")]
+
+    predict_udf = make_predict_udf(
+        catalog=spark.conf.get("pipeline.catalog"),
+        schema=spark.conf.get("pipeline.schema", "default"),
+        model_name=spark.conf.get("pipeline.model_name"),
+        feature_cols=feature_cols
+    )
 
     return (
         input_df

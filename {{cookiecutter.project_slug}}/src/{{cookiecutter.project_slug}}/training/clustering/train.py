@@ -150,10 +150,16 @@ with mlflow.start_run() as run:
     output_sample = pd.Series(labels.astype(float), name="cluster")
     signature = infer_signature(X_sample, output_sample)
 
+    import sklearn
+    import numpy
     mlflow.sklearn.log_model(
         sk_model=model,
         artifact_path="model",
         signature=signature,
+        pip_requirements=[
+            f"scikit-learn=={sklearn.__version__}",
+            f"numpy=={numpy.__version__}",
+        ],
         registered_model_name=f"{catalog}.{schema}.{model_name}"
     )
 

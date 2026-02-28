@@ -18,6 +18,9 @@ resources:
       tasks:
         - task_key: setup_feature_monitoring
           job_cluster_key: default
+          libraries:
+            - pypi:
+                package: jinja2
           spark_python_task:
             python_file: ../src/{{cookiecutter.project_slug}}/monitoring/setup_monitoring.py
             parameters:
@@ -30,6 +33,9 @@ resources:
           depends_on:
             - task_key: setup_feature_monitoring
           job_cluster_key: default
+          libraries:
+            - pypi:
+                package: jinja2
           spark_python_task:
             python_file: ../src/{{cookiecutter.project_slug}}/monitoring/setup_monitoring.py
             parameters:

@@ -106,7 +106,22 @@ versions = client.search_model_versions(f"name='{model_uri}'")
 if not versions:
     raise ValueError(f"No model versions found for {model_uri}")
 
-challenger_version = sorted(versions, key=lambda x: int(x.version), reverse=True)[0]
+def is_pipeline_version(v):
+    """Return True if this version was registered by our training pipeline."""
+    try:
+        if not v.run_id:
+            return False
+        run = client.get_run(v.run_id)
+        return run.data.params.get("model_type") == "KMeans"
+    except Exception:
+        return False
+
+pipeline_versions = [v for v in versions if is_pipeline_version(v)]
+if not pipeline_versions:
+    raise ValueError(f"No pipeline-registered versions found for {model_uri}. "
+                     "Check that training has run successfully.")
+
+challenger_version = sorted(pipeline_versions, key=lambda x: int(x.version), reverse=True)[0]
 challenger_model = mlflow.sklearn.load_model(
     f"models:/{model_uri}/{challenger_version.version}"
 )
@@ -124,18 +139,23 @@ print(f"Challenger metrics: {challenger_metrics}")
 
 try:
     client.get_model_version_by_alias(model_uri, "champion")
-    champion_model = mlflow.sklearn.load_model(f"models:/{model_uri}@champion")
-    champion_metrics = evaluate_model(champion_model, X_scaled)
-    print(f"Champion metrics: {champion_metrics}")
+    try:
+        champion_model = mlflow.sklearn.load_model(f"models:/{model_uri}@champion")
+        champion_metrics = evaluate_model(champion_model, X_scaled)
+        print(f"Champion metrics: {champion_metrics}")
 
-    # Promote challenger if silhouette score is at least as good as champion.
-    # Adjust the threshold and metric to your own requirements.
-    # Note: always validate cluster interpretability with business stakeholders
-    if challenger_metrics["silhouette_score"] >= champion_metrics["silhouette_score"]:
-        print("Challenger meets promotion threshold - promoting to champion")
+        # Promote challenger if silhouette score is at least as good as champion.
+        # Adjust the threshold and metric to your own requirements.
+        # Note: always validate cluster interpretability with business stakeholders
+        if challenger_metrics["silhouette_score"] >= champion_metrics["silhouette_score"]:
+            print("Challenger meets promotion threshold - promoting to champion")
+            client.set_registered_model_alias(model_uri, "champion", challenger_version.version)
+        else:
+            print("Champion retained - challenger did not meet promotion threshold")
+    except Exception as e:
+        # Champion model cannot be loaded (e.g. environment/dependency mismatch) - promote challenger
+        print(f"Champion model failed to load ({e}) - promoting challenger to champion")
         client.set_registered_model_alias(model_uri, "champion", challenger_version.version)
-    else:
-        print("Champion retained - challenger did not meet promotion threshold")
 
 except Exception:
     print("No champion found - promoting challenger to champion")
