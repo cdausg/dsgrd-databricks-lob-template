@@ -28,7 +28,16 @@ variables:
     default: {{cookiecutter.mlflow_experiment_path}}
 
 permissions:
+  {% if cookiecutter.engineer_principal_type == "group" %}
   - group_name: {{cookiecutter.engineer_group}}
+    level: CAN_MANAGE
+  {% else %}
+  - user_name: {{cookiecutter.engineer_group}}
+    level: CAN_MANAGE
+  {% endif %}
+  - service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-staging
+    level: CAN_MANAGE
+  - service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-prod
     level: CAN_MANAGE
 
 targets:

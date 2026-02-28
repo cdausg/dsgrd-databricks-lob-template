@@ -14,6 +14,7 @@
     "cluster_policy_id": "",
     "instance_pool_id": "",
     "engineer_group": "",
+    "engineer_principal_type": ["group", "user"],
     "model_name": "",
     "mlflow_experiment_path": "/Shared/{{cookiecutter.project_slug}}/experiments",
     "cicd_platform": ["github_actions", "azure_devops"],
@@ -32,7 +33,8 @@
         "node_type_id": "VM node type (confirm with hub platform team — Azure example: Standard_DS3_v2, AWS example: i3.xlarge)",
         "cluster_policy_id": "Cluster policy ID (get this from the hub platform team)",
         "instance_pool_id": "Instance pool ID for dev (get this from the hub platform team — leave empty if not available)",
-        "engineer_group": "Identity group for your team (Azure: Entra ID group, AWS: IAM group — e.g. lob-a-engineers@client.com)",
+        "engineer_group": "Identity for your team (Entra ID group name or user email — e.g. lob-a-engineers or cdausgaard@client.com)",
+        "engineer_principal_type": "Principal type: 'group' if engineer_group is an Entra ID / IAM group, 'user' if it is an individual user email",
         "model_name": "MLflow registered model name (e.g. lob_a_churn_prediction_model)",
         "mlflow_experiment_path": "MLflow experiment path (leave default unless instructed otherwise)",
         "cicd_platform": "CI/CD platform for Azure LOBs (github_actions or azure_devops) — ignored for AWS (always GitHub Actions)"
