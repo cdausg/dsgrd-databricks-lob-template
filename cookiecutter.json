@@ -8,8 +8,9 @@
     "workspace_url_staging": "",
     "workspace_url_prod": "",
     "cloud_provider": ["azure", "aws"],
+    "aws_region": "",
     "spark_version": "15.4.x-scala2.12",
-    "node_type_id": "Standard_DS3_v2",
+    "node_type_id": "",
     "cluster_policy_id": "",
     "instance_pool_id": "",
     "engineer_group": "",
@@ -26,13 +27,14 @@
         "workspace_url_staging": "Databricks workspace URL for staging (get this from the hub platform team)",
         "workspace_url_prod": "Databricks workspace URL for prod (get this from the hub platform team)",
         "cloud_provider": "Cloud provider (azure or aws)",
+        "aws_region": "AWS region where Secrets Manager secrets are stored (AWS only, e.g. eu-west-1 — leave empty for Azure)",
         "spark_version": "Databricks runtime version (confirm with hub platform team)",
-        "node_type_id": "VM node type (confirm with hub platform team - Azure: Standard_DS3_v2, AWS: i3.xlarge)",
+        "node_type_id": "VM node type (confirm with hub platform team — Azure example: Standard_DS3_v2, AWS example: i3.xlarge)",
         "cluster_policy_id": "Cluster policy ID (get this from the hub platform team)",
-        "instance_pool_id": "Instance pool ID for dev (get this from the hub platform team - speeds up cluster startup, leave empty if not available)",
-        "engineer_group": "Entra ID / IAM group for your team (e.g. lob-a-engineers@client.com)",
+        "instance_pool_id": "Instance pool ID for dev (get this from the hub platform team — leave empty if not available)",
+        "engineer_group": "Identity group for your team (Azure: Entra ID group, AWS: IAM group — e.g. lob-a-engineers@client.com)",
         "model_name": "MLflow registered model name (e.g. lob_a_churn_prediction_model)",
         "mlflow_experiment_path": "MLflow experiment path (leave default unless instructed otherwise)",
-        "cicd_platform": "CI/CD platform (github_actions or azure_devops) - delete the unused folder after generation"
+        "cicd_platform": "CI/CD platform for Azure LOBs (github_actions or azure_devops) — ignored for AWS (always GitHub Actions)"
     }
 }

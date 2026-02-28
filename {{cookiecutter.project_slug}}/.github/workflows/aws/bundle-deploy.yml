@@ -1,0 +1,154 @@
+# -----------------------------------------------------------------
+# Bundle Deploy — AWS
+# Triggered on push to main or release branches
+# Auth: AWS OIDC → IAM role → Secrets Manager → Databricks token
+#
+# Required GitHub repository variables:
+#   AWS_ROLE_ARN — IAM role ARN provisioned by hub Terraform
+#                  (output: github_actions_role_arn from lob environment)
+#   AWS_REGION   — AWS region where Secrets Manager secrets live
+# -----------------------------------------------------------------
+
+name: Deploy LOB Bundle
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+    paths:
+      - 'src/**'
+      - 'resources/**'
+      - 'databricks.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'resources/**'
+      - 'databricks.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: {% raw %}${{ vars.AWS_ROLE_ARN }}{% endraw %}
+          aws-region: {% raw %}${{ vars.AWS_REGION }}{% endraw %}
+
+      - name: Get Databricks token from Secrets Manager
+        run: |
+          token=$(aws secretsmanager get-secret-value --secret-id "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-DEV" --query "SecretString" --output text)
+          echo "::add-mask::$token"
+          echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
+
+      - name: Install Databricks CLI
+        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+      - name: Validate bundle
+        env:
+          DATABRICKS_HOST: {{cookiecutter.workspace_url_dev}}
+          DATABRICKS_TOKEN: {% raw %}${{ env.DATABRICKS_TOKEN }}{% endraw %}
+        run: databricks bundle validate
+
+  deploy-dev:
+    name: Deploy to Dev
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: {% raw %}${{ vars.AWS_ROLE_ARN }}{% endraw %}
+          aws-region: {% raw %}${{ vars.AWS_REGION }}{% endraw %}
+
+      - name: Get Databricks token from Secrets Manager
+        run: |
+          token=$(aws secretsmanager get-secret-value --secret-id "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-DEV" --query "SecretString" --output text)
+          echo "::add-mask::$token"
+          echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
+
+      - name: Install Databricks CLI
+        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+      - name: Deploy to dev
+        env:
+          DATABRICKS_HOST: {{cookiecutter.workspace_url_dev}}
+          DATABRICKS_TOKEN: {% raw %}${{ env.DATABRICKS_TOKEN }}{% endraw %}
+        run: databricks bundle deploy --target dev
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: deploy-dev
+    if: startsWith(github.ref, 'refs/heads/release/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: {% raw %}${{ vars.AWS_ROLE_ARN }}{% endraw %}
+          aws-region: {% raw %}${{ vars.AWS_REGION }}{% endraw %}
+
+      - name: Get Databricks token from Secrets Manager
+        run: |
+          token=$(aws secretsmanager get-secret-value --secret-id "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-STAGING" --query "SecretString" --output text)
+          echo "::add-mask::$token"
+          echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
+
+      - name: Install Databricks CLI
+        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+      - name: Deploy to staging
+        env:
+          DATABRICKS_HOST: {{cookiecutter.workspace_url_staging}}
+          DATABRICKS_TOKEN: {% raw %}${{ env.DATABRICKS_TOKEN }}{% endraw %}
+        run: databricks bundle deploy --target staging
+
+  deploy-prod:
+    name: Deploy to Prod
+    needs: deploy-staging
+    if: startsWith(github.ref, 'refs/heads/release/')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: {% raw %}${{ vars.AWS_ROLE_ARN }}{% endraw %}
+          aws-region: {% raw %}${{ vars.AWS_REGION }}{% endraw %}
+
+      - name: Get Databricks token from Secrets Manager
+        run: |
+          token=$(aws secretsmanager get-secret-value --secret-id "DATABRICKS-TOKEN-{{cookiecutter.lob_name}}-PROD" --query "SecretString" --output text)
+          echo "::add-mask::$token"
+          echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
+
+      - name: Install Databricks CLI
+        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+      - name: Deploy to prod
+        env:
+          DATABRICKS_HOST: {{cookiecutter.workspace_url_prod}}
+          DATABRICKS_TOKEN: {% raw %}${{ env.DATABRICKS_TOKEN }}{% endraw %}
+        run: databricks bundle deploy --target prod

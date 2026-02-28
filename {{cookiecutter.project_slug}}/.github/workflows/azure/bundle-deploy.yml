@@ -1,7 +1,12 @@
 # -----------------------------------------------------------------
-# Bundle Deploy Workflow
-# Triggered when changes are pushed to main or release branches
-# Deploys the LOB bundle to the appropriate target workspace
+# Bundle Deploy — Azure
+# Triggered on push to main or release branches
+# Auth: Azure OIDC → Key Vault (kv-dsgrd-hub) → Databricks token
+#
+# Required GitHub repository variables:
+#   AZURE_CLIENT_ID       — App registration client ID for OIDC
+#   AZURE_TENANT_ID       — Azure AD tenant ID
+#   AZURE_SUBSCRIPTION_ID — Azure subscription ID
 # -----------------------------------------------------------------
 
 name: Deploy LOB Bundle
@@ -52,8 +57,7 @@ jobs:
             echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
       - name: Install Databricks CLI
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
 
       - name: Validate bundle
         env:
@@ -86,8 +90,7 @@ jobs:
             echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
       - name: Install Databricks CLI
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
 
       - name: Deploy to dev
         env:
@@ -120,8 +123,7 @@ jobs:
             echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
       - name: Install Databricks CLI
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
 
       - name: Deploy to staging
         env:
@@ -155,8 +157,7 @@ jobs:
             echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
       - name: Install Databricks CLI
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
 
       - name: Deploy to prod
         env:
