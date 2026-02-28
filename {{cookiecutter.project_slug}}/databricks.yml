@@ -50,6 +50,7 @@ targets:
     mode: production
     workspace:
       host: {{cookiecutter.workspace_url_staging}}
+      root_path: /Shared/.bundle/${bundle.name}/${bundle.target}
     run_as:
       service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-staging
     permissions:
@@ -63,6 +64,7 @@ targets:
     mode: production
     workspace:
       host: {{cookiecutter.workspace_url_prod}}
+      root_path: /Shared/.bundle/${bundle.name}/${bundle.target}
     run_as:
       service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-prod
     permissions:
