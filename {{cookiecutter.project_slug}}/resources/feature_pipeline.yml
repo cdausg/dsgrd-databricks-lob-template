@@ -1,7 +1,7 @@
 resources:
   pipelines:
     ingestion_pipeline:
-      name: "{{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}} Ingestion Pipeline"
+      name: "[${bundle.target}] {{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}} Ingestion Pipeline"
       catalog: ${var.catalog}
       target: ${var.schema}
       channel: CURRENT

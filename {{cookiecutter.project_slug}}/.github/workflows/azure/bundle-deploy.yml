@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Azure Login (OIDC)
         uses: azure/login@v1
@@ -56,8 +56,8 @@ jobs:
             echo "::add-mask::$token"
             echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
-      - name: Install Databricks CLI
-        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@v0.236.0
 
       - name: Validate bundle
         env:
@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Azure Login (OIDC)
         uses: azure/login@v1
@@ -89,8 +89,8 @@ jobs:
             echo "::add-mask::$token"
             echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
-      - name: Install Databricks CLI
-        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@v0.236.0
 
       - name: Deploy to dev
         env:
@@ -105,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Azure Login (OIDC)
         uses: azure/login@v1
@@ -122,8 +122,8 @@ jobs:
             echo "::add-mask::$token"
             echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
-      - name: Install Databricks CLI
-        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@v0.236.0
 
       - name: Deploy to staging
         env:
@@ -139,7 +139,7 @@ jobs:
     environment: production
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Azure Login (OIDC)
         uses: azure/login@v1
@@ -156,8 +156,8 @@ jobs:
             echo "::add-mask::$token"
             echo "DATABRICKS_TOKEN=$token" >> $GITHUB_ENV
 
-      - name: Install Databricks CLI
-        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@v0.236.0
 
       - name: Deploy to prod
         env:

@@ -1,7 +1,7 @@
 resources:
   pipelines:
     inference_pipeline:
-      name: "{{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}} Inference Pipeline"
+      name: "[${bundle.target}] {{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}} Inference Pipeline"
       catalog: ${var.catalog}
       target: ${var.schema}
       channel: CURRENT

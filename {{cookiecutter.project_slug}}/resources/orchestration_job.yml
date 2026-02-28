@@ -1,7 +1,7 @@
 resources:
   jobs:
     orchestration_job:
-      name: "{{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}} Orchestration Job"
+      name: "[${bundle.target}] {{cookiecutter.lob_display_name}} - {{cookiecutter.project_slug}} Orchestration Job"
       schedule:
         quartz_cron_expression: "0 0 2 * * ?"
         timezone_id: "UTC"
