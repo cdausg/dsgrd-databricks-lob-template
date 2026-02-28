@@ -35,10 +35,6 @@ permissions:
   - user_name: {{cookiecutter.engineer_group}}
     level: CAN_MANAGE
   {% endif %}
-  - service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-staging
-    level: CAN_MANAGE
-  - service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-prod
-    level: CAN_MANAGE
 
 targets:
   dev:
@@ -56,6 +52,9 @@ targets:
       host: {{cookiecutter.workspace_url_staging}}
     run_as:
       service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-staging
+    permissions:
+      - service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-staging
+        level: CAN_MANAGE
     variables:
       catalog: {{cookiecutter.catalog_name}}_staging
       schema: {{cookiecutter.schema_name}}
@@ -66,6 +65,9 @@ targets:
       host: {{cookiecutter.workspace_url_prod}}
     run_as:
       service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-prod
+    permissions:
+      - service_principal_name: sp-cicd-{{cookiecutter.lob_name}}-prod
+        level: CAN_MANAGE
     variables:
       catalog: {{cookiecutter.catalog_name}}_prod
       schema: {{cookiecutter.schema_name}}
