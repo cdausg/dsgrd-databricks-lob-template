@@ -41,8 +41,7 @@ def raw_data():
         .format("cloudFiles")
         .option("cloudFiles.format", "csv")
         .option("cloudFiles.inferColumnTypes", "true")
-        # Azure: abfss://container@storageaccount.dfs.core.windows.net/path
-        # AWS: s3://bucket/path
+        # Source path: abfss://container@storageaccount.dfs.core.windows.net/path
         .load(f"/Volumes/{catalog}/{schema}/raw/")
     )
 

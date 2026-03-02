@@ -15,7 +15,7 @@ variables:
     description: Databricks runtime version
     default: {{cookiecutter.spark_version}}
   node_type_id:
-    description: VM node type (Azure - Standard_DS3_v2, AWS - i3.xlarge)
+    description: VM node type (e.g. Standard_DS3_v2)
     default: {{cookiecutter.node_type_id}}
   cluster_policy_id:
     description: Cluster policy ID - get this from the hub platform team
