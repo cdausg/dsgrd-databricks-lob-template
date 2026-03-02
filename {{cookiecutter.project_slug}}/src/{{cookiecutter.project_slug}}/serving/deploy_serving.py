@@ -93,7 +93,7 @@ def main():
     args = parse_args()
     w = WorkspaceClient()
 
-    endpoint_name = f"{args.catalog}-{args.schema}-{args.model_name}"
+    endpoint_name = f"{args.catalog}_{args.schema}_{args.model_name}"
 
     if args.validate_only:
         print(f"Validating endpoint: {endpoint_name}")
